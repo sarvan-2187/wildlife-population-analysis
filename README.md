@@ -37,8 +37,6 @@ Located in `/backend/models` and `/data`.
 - **Forecasting**: An ARIMA(2,1,1) model (`time_series_model.py`) generates population projections for the 2026-2031 window.
 - **Normalization**: A dedicated pipeline ensures all growth rates are clipped to a realistic [-99%, +100%] range for data integrity.
 
----
-
 ## Key Features
 
 ### Oceanic Focal Mode
@@ -53,7 +51,6 @@ The system indexes over 5,000 species records locally, enabling the AI to answer
 ### Haskell-Powered Telemetry Guard
 A unique addition to our pipeline, the **Haskell Verification Engine** acts as a structural guardrail. It guarantees that the dashboard's telemetry data is consistent and valid before every deployment, leveraging Haskell's reliability for critical data checks.
 
----
 
 ## Local Development
 
