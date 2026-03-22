@@ -1,0 +1,47 @@
+# Dependency directories
+node_modules/
+venv/
+.venv/
+env/
+__pycache__/
+
+# Next.js build output
+.next/
+out/
+
+# Database / Local Indices
+data/chroma_db/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build artifacts
+dist/
+build/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE / System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+bin/
+include/
+lib/
+share/
+pyvenv.cfg
+pip-selfcheck.json

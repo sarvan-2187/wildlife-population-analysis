@@ -1,0 +1,142 @@
+{
+    "classifier": {
+        "model": "Random Forest Classifier",
+        "train_samples": 278942,
+        "test_samples": 69736,
+        "accuracy": 1.0,
+        "f1_macro": 0.9999,
+        "f1_weighted": 1.0,
+        "precision_weighted": 1.0,
+        "recall_weighted": 1.0,
+        "feature_importances": {
+            "growth_rate": 0.9873,
+            "Year": 0.0015,
+            "Latitude": 0.005,
+            "Longitude": 0.0036,
+            "System_enc": 0.0011,
+            "Region_enc": 0.0014
+        },
+        "class_distribution": {
+            "Growing": 160838,
+            "Declining": 159519,
+            "Stable": 28321
+        },
+        "classification_report": {
+            "Declining": {
+                "precision": 1.0,
+                "recall": 0.9999686559679037,
+                "f1-score": 0.9999843277383359,
+                "support": 31904.0
+            },
+            "Stable": {
+                "precision": 0.9994706193753309,
+                "recall": 1.0,
+                "f1-score": 0.9997352396081546,
+                "support": 5664.0
+            },
+            "Growing": {
+                "precision": 1.0,
+                "recall": 0.9999378264113404,
+                "f1-score": 0.9999689122392514,
+                "support": 32168.0
+            },
+            "accuracy": 0.9999569806125961,
+            "macro avg": {
+                "precision": 0.9998235397917771,
+                "recall": 0.9999688274597481,
+                "f1-score": 0.9998961598619139,
+                "support": 69736.0
+            },
+            "weighted avg": {
+                "precision": 0.9999570033862262,
+                "recall": 0.9999569806125961,
+                "f1-score": 0.9999569857493503,
+                "support": 69736.0
+            }
+        },
+        "confusion_matrix": [
+            [
+                31903,
+                1,
+                0
+            ],
+            [
+                0,
+                5664,
+                0
+            ],
+            [
+                0,
+                2,
+                32166
+            ]
+        ],
+        "label_map": {
+            "0": "Declining",
+            "1": "Stable",
+            "2": "Growing"
+        }
+    },
+    "time_series": {
+        "model": "ARIMA(2,1,1) Time Series Forecaster",
+        "arima_order": [
+            2,
+            1,
+            1
+        ],
+        "species_evaluated": 4,
+        "forecast_horizon_years": 6,
+        "avg_mae": 4867817.5794,
+        "avg_rmse": 6486814.9531,
+        "per_species": {
+            "Acanthis_flammea": {
+                "mae": 3970.9514,
+                "rmse": 3972.4194,
+                "forecast": {
+                    "2026": 2196.02,
+                    "2027": 2196.66,
+                    "2028": 2196.72,
+                    "2029": 2196.76,
+                    "2030": 2196.77,
+                    "2031": 2196.77
+                }
+            },
+            "Aegithalos_caudatus": {
+                "mae": 38.5988,
+                "rmse": 40.9585,
+                "forecast": {
+                    "2026": 168.27,
+                    "2027": 168.27,
+                    "2028": 168.27,
+                    "2029": 168.27,
+                    "2030": 168.27,
+                    "2031": 168.27
+                }
+            },
+            "Gadus_morhua": {
+                "mae": 18855049.5498,
+                "rmse": 25277578.8575,
+                "forecast": {
+                    "2026": 955804.36,
+                    "2027": 977689.38,
+                    "2028": 961317.33,
+                    "2029": 973557.95,
+                    "2030": 964408.51,
+                    "2031": 971246.67
+                }
+            },
+            "Alauda_arvensis": {
+                "mae": 612211.2176,
+                "rmse": 665667.5771,
+                "forecast": {
+                    "2026": 447272.59,
+                    "2027": 502235.4,
+                    "2028": 552932.89,
+                    "2029": 599696.07,
+                    "2030": 642830.26,
+                    "2031": 682617.08
+                }
+            }
+        }
+    }
+}
