@@ -2,6 +2,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router as api_router
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(
     title="EcoDynamix Engine",
@@ -10,12 +13,11 @@ app = FastAPI(
 )
 
 # Configure CORS for the Next.js frontend
-import os
-
 allowed_origins = [
     "http://localhost:3000",  # Local development
     "http://localhost:3001",
-    os.getenv("FRONTEND_URL", ""),  # Production frontend URL (set in Render)
+    "https://ecodynamix-dashboard.vercel.app",  # Production Vercel
+    os.getenv("FRONTEND_URL", ""),  # Environment variable for flexibility
 ]
 
 # Filter out empty strings
