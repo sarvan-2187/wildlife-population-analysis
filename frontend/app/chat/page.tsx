@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, Bot, User, Database, Plus, Paperclip, Loader2, Info } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { API_ENDPOINTS } from "@/lib/api-config";
+import { API_ENDPOINTS } from "../../lib/api-config";
 
 type Message = {
   role: "user" | "assistant";

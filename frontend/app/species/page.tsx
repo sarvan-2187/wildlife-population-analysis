@@ -14,7 +14,7 @@ import {
   Sparkles,
   Globe
 } from "lucide-react";
-import { API_ENDPOINTS } from "@/lib/api-config";
+import { API_ENDPOINTS } from "../../lib/api-config";
 
 export default function SpeciesPage() {
   const [species, setSpecies] = useState<any[]>([]);

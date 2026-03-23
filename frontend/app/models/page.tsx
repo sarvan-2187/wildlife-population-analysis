@@ -31,7 +31,7 @@ import {
   Sparkles,
   Database
 } from "lucide-react";
-import { API_ENDPOINTS } from "@/lib/api-config";
+import { API_ENDPOINTS } from "../../lib/api-config";
 
 export default function ModelsPage() {
   const [metrics, setMetrics] = useState<any>(null);

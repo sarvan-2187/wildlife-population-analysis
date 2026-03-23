@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
-import { API_ENDPOINTS } from "@/lib/api-config";
+import { API_ENDPOINTS } from "../lib/api-config";
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
