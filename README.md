@@ -1,11 +1,11 @@
-# Wildlife population analysis
+# EcoDynamix: Global Species Intelligence
 
-## Problem statement: Modelling global wildlife population dynamics: A higher order computational assesment of species decline
+## Problem statement: Modelling global wildlife population dynamics: A higher order computational assessment of species decline (EcoDynamix Engine)
 
 ### TechStack
 [![My Skills](https://skillicons.dev/icons?i=haskell,py,pytorch,fastapi,react,tailwind)](https://skillicons.dev)
 
-Welcome to the technical documentation for the **Wildlife Population Intelligence Dashboard**. This system is a full-stack computational engine designed to analyze, visualize, and forecast global species population trends using historical data, machine learning, and RAG-powered AI.
+Welcome to the technical documentation for the **EcoDynamix Intelligence Dashboard**. This system is a full-stack computational engine designed to analyze, visualize, and forecast global species population trends using historical data, machine learning, and RAG-powered AI.
 
 ## System Architecture
 

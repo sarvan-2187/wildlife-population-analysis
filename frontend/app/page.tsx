@@ -62,7 +62,7 @@ export default function DashboardPage() {
     <div className="p-4 md:p-8 w-full max-w-7xl mx-auto h-full flex flex-col space-y-8 relative">
       <header>
         <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-          Global Wildlife Intelligence
+          EcoDynamix Global Pulse
         </h1>
         <p className="text-zinc-400 mt-2">Real-time computational assessment of species decline and population dynamics.</p>
       </header>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold text-zinc-100 mb-4 flex items-center gap-2 italic">
             Global Historical Population Trend
           </h2>
-          <div className="w-full min-h-[250px] md:min-h-[400px]">
+          <div className="w-full h-[300px] md:h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
                 <defs>

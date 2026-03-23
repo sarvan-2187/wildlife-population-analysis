@@ -15,8 +15,8 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: "Wildlife Pop Analysis Dashboard",
-  description: "Global wildlife species decline assessment & RAG",
+  title: "EcoDynamix Intelligence Dashboard",
+  description: "Global species decline assessment & RAG powered by EcoDynamix",
 };
 
 export default function RootLayout({

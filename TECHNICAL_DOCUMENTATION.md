@@ -1,8 +1,8 @@
-# Wildlife Population Analysis System: Technical Documentation
+# EcoDynamix: Global Species Intelligence Dashboard
 
 ## Executive Summary
 
-This document provides a comprehensive technical overview of the **Wildlife Population Intelligence Dashboard** — a full-stack computational system designed to analyze, forecast, and visualize global species population dynamics. The system integrates machine learning models, retrieval-augmented generation (RAG), and an interactive web-based visualization platform to support conservation research and policy-informed decision-making.
+This document provides a comprehensive technical overview of the **EcoDynamix Intelligence Dashboard** — a full-stack computational system designed to analyze, forecast, and visualize global species population dynamics.
 
 ---
 

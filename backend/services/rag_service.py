@@ -101,7 +101,7 @@ def get_rag_response(query: str) -> str:
             messages=[
                 {
                     "role": "system",
-                    "content": f"You are a Wildlife Conservation Analyst. Use the following retrieved facts to answer the user's question accurately. If the facts don't contain the answer, say you don't know based on current data.\n\nContext:\n{context}"
+                    "content": f"You are a Wildlife Conservation Analyst. Use the following retrieved facts to answer the user's question accurately. If the facts are missing common/general names for species mentioned by their scientific name, you may use your internal specialized knowledge to provide those names, but clearly distinguish between data retrieved from the database and your general knowledge. For all population statistics, trends, and growth rates, you MUST strictly prioritize the provided context data.\n\nContext:\n{context}"
                 },
                 {
                     "role": "user",
