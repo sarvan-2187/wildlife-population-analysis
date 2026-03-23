@@ -14,6 +14,7 @@ import {
   Sparkles,
   Globe
 } from "lucide-react";
+import { API_ENDPOINTS } from "@/lib/api-config";
 
 export default function SpeciesPage() {
   const [species, setSpecies] = useState<any[]>([]);
@@ -24,7 +25,7 @@ export default function SpeciesPage() {
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/v1/dashboard")
+    fetch(API_ENDPOINTS.DASHBOARD)
       .then(res => res.json())
       .then(data => {
         setSpecies(data.species_data || []);

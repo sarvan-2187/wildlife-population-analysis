@@ -31,6 +31,7 @@ import {
   Sparkles,
   Database
 } from "lucide-react";
+import { API_ENDPOINTS } from "@/lib/api-config";
 
 export default function ModelsPage() {
   const [metrics, setMetrics] = useState<any>(null);
@@ -38,7 +39,7 @@ export default function ModelsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/v1/model-metrics")
+    fetch(API_ENDPOINTS.MODEL_METRICS)
       .then(res => res.json())
       .then(data => { setMetrics(data); setLoading(false); })
       .catch(() => { setError("Failed to fetch model metrics. Is the backend running?"); setLoading(false); });

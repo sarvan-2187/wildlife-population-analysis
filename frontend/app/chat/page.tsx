@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, Bot, User, Database, Plus, Paperclip, Loader2, Info } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { API_ENDPOINTS } from "@/lib/api-config";
 
 type Message = {
   role: "user" | "assistant";
@@ -39,7 +40,7 @@ export default function ChatPage() {
     setIsTyping(true);
 
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/chat?message=${encodeURIComponent(currentInput)}`, {
+      const res = await fetch(`${API_ENDPOINTS.CHAT}?message=${encodeURIComponent(currentInput)}`, {
         method: "POST",
       });
       const data = await res.json();

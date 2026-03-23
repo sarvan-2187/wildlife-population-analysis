@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { API_ENDPOINTS } from "@/lib/api-config";
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
@@ -12,7 +13,7 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<'General' | 'Marine'>('General');
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/v1/dashboard")
+    fetch(API_ENDPOINTS.DASHBOARD)
       .then(res => res.json())
       .then(data => setDashboardData(data))
       .catch(err => console.error("Error fetching dashboard data:", err));
