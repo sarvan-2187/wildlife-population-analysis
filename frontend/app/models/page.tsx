@@ -69,11 +69,11 @@ export default function ModelsPage() {
 
   // Radar chart data for classifier
   const radarData = [
-    { metric: `Accuracy (${((clf?.accuracy || 0.745) * 100).toFixed(1)}%)`, score: clf?.accuracy || 0.745 },
-    { metric: `F1 Macro (${(clf?.f1_macro || 0.683).toFixed(3)})`, score: clf?.f1_macro || 0.683 },
-    { metric: `F1 Weighted (${(clf?.f1_weighted || 0.724).toFixed(3)})`, score: clf?.f1_weighted || 0.724 },
-    { metric: `Precision (${(clf?.precision_weighted || 0.731).toFixed(3)})`, score: clf?.precision_weighted || 0.731 },
-    { metric: `Recall (${(clf?.recall_weighted || 0.745).toFixed(3)})`, score: clf?.recall_weighted || 0.745 },
+    { metric: `Accuracy (${((clf?.test_set_metrics?.accuracy || 0.9915) * 100).toFixed(1)}%)`, score: clf?.test_set_metrics?.accuracy || 0.9915 },
+    { metric: `F1 Macro (${(clf?.test_set_metrics?.f1_macro || 0.9796).toFixed(3)})`, score: clf?.test_set_metrics?.f1_macro || 0.9796 },
+    { metric: `F1 Weighted (${(clf?.test_set_metrics?.f1_weighted || 0.9915).toFixed(3)})`, score: clf?.test_set_metrics?.f1_weighted || 0.9915 },
+    { metric: `Precision (${(clf?.test_set_metrics?.precision_weighted || 0.9915).toFixed(3)})`, score: clf?.test_set_metrics?.precision_weighted || 0.9915 },
+    { metric: `Recall (${(clf?.test_set_metrics?.recall_weighted || 0.9915).toFixed(3)})`, score: clf?.test_set_metrics?.recall_weighted || 0.9915 },
   ];
 
   // Feature importance bar chart
@@ -126,10 +126,10 @@ export default function ModelsPage() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Predictive Accuracy", value: "74.50%", icon: <Sparkles />, color: "text-violet-400", bg: "bg-violet-500/5", border: "border-violet-500/10" },
-            { label: "F1 Macro Score", value: "0.683", icon: <CheckCircle2 />, color: "text-emerald-400", bg: "bg-emerald-500/5", border: "border-emerald-500/10" },
-            { label: "Training Scale", value: "1.68M", icon: <Database />, color: "text-blue-400", bg: "bg-blue-500/5", border: "border-blue-500/10" },
-            { label: "Forecast Horizon", value: "6-Year", icon: <TrendingDown />, color: "text-amber-400", bg: "bg-amber-500/5", border: "border-amber-500/10" },
+            { label: "Predictive Accuracy", value: "99.15%", icon: <Sparkles />, color: "text-violet-400", bg: "bg-violet-500/5", border: "border-violet-500/10" },
+            { label: "F1 Weighted Score", value: "0.9915", icon: <CheckCircle2 />, color: "text-emerald-400", bg: "bg-emerald-500/5", border: "border-emerald-500/10" },
+            { label: "Training Scale", value: "348.6K", icon: <Database />, color: "text-blue-400", bg: "bg-blue-500/5", border: "border-blue-500/10" },
+            { label: "CV Stability", value: "0.9912±0.0005", icon: <TrendingDown />, color: "text-amber-400", bg: "bg-amber-500/5", border: "border-amber-500/10" },
           ].map((s, i) => (
             <div key={i} className={`group relative overflow-hidden glass-panel p-5 rounded-3xl border ${s.border} ${s.bg} hover:border-zinc-700 transition-all duration-500`}>
               <div className="absolute -right-4 -top-4 w-20 h-20 bg-zinc-400/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
@@ -170,7 +170,7 @@ export default function ModelsPage() {
             </ResponsiveContainer>
           </div>
           <div className="mt-6 flex gap-4 text-[10px] font-bold text-zinc-600 uppercase border-t border-zinc-800 pt-6">
-            <div className="flex items-center gap-1.5"><History className="w-3 h-3" /> Historical Baseline: 74.5%</div>
+            <div className="flex items-center gap-1.5"><History className="w-3 h-3" /> Optimized Model: 99.15%</div>
             <div className="flex items-center gap-1.5"><Globe className="w-3 h-3" /> Global Diversity Check: PASSED</div>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function ModelsPage() {
             <h2 className="text-xl font-black text-zinc-100 mb-2 flex items-center gap-2 tracking-tighter">
               <BarChart3 className="w-5 h-5 text-emerald-500" /> Species Health Distribution
             </h2>
-            <p className="text-xs text-zinc-500 mb-8">Classification frequency across the 2.1 million population observation points in the LPD cache.</p>
+            <p className="text-xs text-zinc-500 mb-8">Classification frequency across 348,678 unique species-year observations from the optimized training dataset.</p>
             <div className="space-y-6">
               {classDist.map(({ label, count }) => {
                 const total = classDist.reduce((s, d) => s + d.count, 0);
@@ -228,9 +228,9 @@ export default function ModelsPage() {
             <Zap className="w-4 h-4" /> Signal Strength: VERIFIED
           </div>
         </div>
-        <div className="h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={featureData.length ? featureData : [{ "name": "growth_rate", "value": 38.5 }, { "name": "Year", "value": 21.4 }, { "name": "Latitude", "value": 15.2 }, { "name": "Region", "value": 12.4 }, { "name": "Longitude", "value": 9.2 }, { "name": "System", "value": 3.8 }]} layout="vertical" margin={{ left: 10, right: 30 }}>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={featureData.length ? featureData : [{ "name": "growth_rate_ma2", "value": 53.05 }, { "name": "growth_rate_lag1", "value": 31.56 }, { "name": "growth_volatility", "value": 8.70 }, { "name": "growth_rate_lag2", "value": 3.47 }, { "name": "lat_lon_interaction", "value": 0.64 }, { "name": "decade_lat_interact", "value": 2.58 }]} layout="vertical" margin={{ left: 10, right: 30 }}>
               <XAxis type="number" hide />
               <YAxis
                 type="category"

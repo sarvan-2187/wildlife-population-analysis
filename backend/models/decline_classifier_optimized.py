@@ -286,4 +286,25 @@ def train_classifier_optimized() -> dict:
 
 
 if __name__ == "__main__":
-    train_classifier_optimized()
+    metrics = train_classifier_optimized()
+    
+    # Save metrics to JSON for API consumption
+    metrics_json_path = os.path.join(BASE_DIR, "data", "model_metrics.json")
+    
+    # Load existing metrics to preserve time_series data
+    if os.path.exists(metrics_json_path):
+        with open(metrics_json_path, "r") as f:
+            existing_metrics = json.load(f)
+    else:
+        existing_metrics = {}
+    
+    # Update classifier metrics
+    existing_metrics["classifier"] = {
+        **metrics,
+        "model_version": "Phase 2 - Optimized with GridSearchCV"
+    }
+    
+    # Save updated metrics
+    with open(metrics_json_path, "w") as f:
+        json.dump(existing_metrics, f, indent=2)
+    print(f"\n✅ Metrics saved to {metrics_json_path}")

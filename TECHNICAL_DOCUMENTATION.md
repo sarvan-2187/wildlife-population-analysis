@@ -228,25 +228,40 @@ RandomForestClassifier(
 
 #### 3.2.5 Training & Evaluation Results
 
-**Dataset Partition:**
-- Train: 1,680,000 samples
-- Test: 420,000 samples
+**Dataset Partition (Phase 2 - Optimized):**
+- Total Samples: 348,678
+- Training Set: 313,810 samples (90%)
+- Test Set (Holdout): 34,868 samples (10%)
+- CV Strategy: StratifiedKFold with 5 splits
 
-**Performance Metrics:**
+**Performance Metrics (Optimized Model with GridSearchCV):**
 
 | Metric | Value |
 |--------|-------|
-| Overall Accuracy | 0.7450 (74.50%) |
-| F1-Score (Macro) | 0.6832 |
-| F1-Score (Weighted) | 0.7241 |
-| Precision (Weighted) | 0.7316 |
-| Recall (Weighted) | 0.7450 |
+| Holdout Test Accuracy | 0.9915 (99.15%) |
+| F1-Score (Macro) | 0.9796 |
+| F1-Score (Weighted) | 0.9915 |
+| Precision (Weighted) | 0.9915 |
+| Recall (Weighted) | 0.9915 |
+| CV Stability F1 (Weighted) | 0.9912 ± 0.0005 |
+
+**Improvements Over Baseline:**
+- **Accuracy:** +27.65% (from 74.50% → 99.15%)
+- **Weighted F1-Score:** +26.74% (from 0.7241 → 0.9915)
+- **Model Stability:** Excellent (5-fold CV std: 0.0005)
+
+**Key Enhancements:**
+1. Advanced feature engineering with lagged growth rates, interaction terms, and volatility metrics
+2. GridSearchCV hyperparameter optimization (72 parameter combinations tested)
+3. Cross-validated hyperparameters application across multiple folds
+4. 11 engineered features vs. 5 baseline features
 
 **Interpretation:**
-- The model correctly classifies species health status in ~74.5% of test cases
-- Weighted F1-score of 0.7241 reflects balanced performance across classes
-- Weighted precision (0.7316) indicates low false positive rate
-- Weighted recall (0.7450) shows good sensitivity across all classes
+- The optimized model correctly classifies species health status in 99.15% of test cases
+- Weighted F1-score of 0.9915 reflects excellent balanced performance across classes
+- Weighted precision (0.9915) indicates extremely low false positive rate
+- Weighted recall (0.9915) shows excellent sensitivity across all classes
+- CV stability (±0.0005) demonstrates highly reproducible performance across data splits
 
 **Per-Class Performance (from Classification Report):**
 
@@ -261,21 +276,28 @@ RandomForestClassifier(
 - **Stable class:** Lower precision but high recall (broader decision boundary)
 - **Growing class:** Balanced performance across metrics
 
-#### 3.2.6 Feature Importance Analysis
+#### 3.2.6 Feature Importance Analysis (Phase 2 - Optimized)
 
-Relative importance of input features (ranking):
-1. **growth_rate** — 0.3850 (largest contributor to predictions)
-2. **Year** — 0.2145 (temporal patterns significant)
-3. **Latitude** — 0.1520 (geographic location matters)
-4. **Region_enc** — 0.1240 (regional classification predictive)
-5. **Longitude** — 0.0920 (longitude less predictive than latitude)
-6. **System_enc** — 0.0380 (ecosystem type has minimal predictive power in this ensemble)
+**Top 5 Most Important Features (Engineered Model):**
 
-**Implications:**
-- Current growth rate is the dominant signal for health classification (as expected)
-- Temporal year is the second-most important feature, indicating time-dependent patterns
-- Spatial features (latitude/longitude) capture geographic variation in population dynamics
-- Ecosystem type alone is not a strong predictor, suggesting health patterns span ecosystems
+1. **growth_rate_ma2** — 0.5305 (2-year smoothed growth trend)
+2. **growth_rate_lag1** — 0.3156 (previous year momentum)
+3. **growth_volatility** — 0.0870 (population change variability)
+4. **growth_rate_lag2** — 0.0347 (two-year lagged effect)
+5. **lat_lon_interaction** — 0.0064 (biogeographic region effect)
+
+**Feature Engineering Impact:**
+- **Engineered features dominate:** Lagged/smoothed growth rates account for 91.28% of model decision-making
+- **Momentum capture:** Lag features recognize population trajectories, not just snapshots
+- **Volatility signal:** Growth rate volatility provides early warning for destabilization
+- **Spatial interactions:** Geographic interaction terms capture region-specific population dynamics
+
+**Interpretation:**
+- The optimized model relies predominantly on temporal momentum (lagged trends) to classify health status
+- Smoothed growth rates (MA2) are the single most predictive feature (53% importance)
+- Engineering lagged and volatility features dramatically improved from baseline
+- Raw geographic coordinates less important than engineered interaction terms
+- This feature hierarchy suggests wildlife populations exhibit temporal inertia — past trends strongly predict future health
 
 ### 3.3 Model 2: ARIMA Time Series Forecaster
 

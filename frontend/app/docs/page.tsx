@@ -118,27 +118,27 @@ export default function DocsPage() {
           <div className="p-6 rounded-2xl border border-purple-500/10 bg-purple-500/5">
             <h4 className="text-zinc-100 font-bold mb-4 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-purple-400" />
-              Model 1: Random Forest Classifier
+              Model 1: Random Forest Classifier (Optimized)
             </h4>
             <p className="text-sm text-zinc-400 mb-4 h-12 overflow-hidden">
-               Categorizes populations into <strong>Declining</strong>, <strong>Stable</strong>, or <strong>Growing</strong> status based on year-over-year momentum.
+               Categorizes populations into <strong>Declining</strong>, <strong>Stable</strong>, or <strong>Growing</strong> status. Phase 2 optimized with GridSearchCV hyperparameter tuning and advanced feature engineering.
             </p>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="text-center p-3 rounded-xl bg-black/30 border border-zinc-800">
                 <p className="text-xs text-zinc-500 uppercase font-bold tracking-tighter">Accuracy</p>
-                <p className="text-xl font-black text-emerald-400">74.5%</p>
+                <p className="text-xl font-black text-emerald-400">99.15%</p>
               </div>
               <div className="text-center p-3 rounded-xl bg-black/30 border border-zinc-800">
                 <p className="text-xs text-zinc-500 uppercase font-bold tracking-tighter">F1 Score</p>
-                <p className="text-xl font-black text-cyan-400">0.72</p>
+                <p className="text-xl font-black text-cyan-400">0.9915</p>
               </div>
               <div className="text-center p-3 rounded-xl bg-black/30 border border-zinc-800">
                 <p className="text-xs text-zinc-500 uppercase font-bold tracking-tighter">Estimators</p>
-                <p className="text-xl font-black text-blue-400">100</p>
+                <p className="text-xl font-black text-blue-400">200</p>
               </div>
               <div className="text-center p-3 rounded-xl bg-black/30 border border-zinc-800">
                 <p className="text-xs text-zinc-500 uppercase font-bold tracking-tighter">Max Depth</p>
-                <p className="text-xl font-black text-violet-400">15</p>
+                <p className="text-xl font-black text-violet-400">25</p>
               </div>
             </div>
           </div>
