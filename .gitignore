@@ -46,4 +46,5 @@ share/
 pyvenv.cfg
 pip-selfcheck.json
 
-decline_classifier_optimized.pkl
+*.pkl
+data/*.pkl
