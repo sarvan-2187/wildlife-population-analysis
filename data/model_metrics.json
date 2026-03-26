@@ -1,74 +1,133 @@
 {
     "classifier": {
-        "model": "Random Forest Classifier",
-        "train_samples": 278942,
-        "test_samples": 69736,
-        "accuracy": 1.0,
-        "f1_macro": 0.9999,
-        "f1_weighted": 1.0,
-        "precision_weighted": 1.0,
-        "recall_weighted": 1.0,
+        "model": "Random Forest Classifier (Baseline)",
+        "total_samples": 348678,
+        "cv_folds": 5,
+        "cv_strategy": "StratifiedKFold",
+        "features_used": [
+            "Year",
+            "Latitude",
+            "Longitude",
+            "System_enc",
+            "Region_enc"
+        ],
+        "data_leakage_fixed": true,
+        "leakage_note": "Removed 'growth_rate' from features \u2014 it was previously used to generate labels (data leakage)",
+        "accuracy": {
+            "mean": 0.5678,
+            "std": 0.0009,
+            "fold_values": [
+                0.5671,
+                0.5696,
+                0.5673,
+                0.5671,
+                0.568
+            ]
+        },
+        "f1_macro": {
+            "mean": 0.4631,
+            "std": 0.0028,
+            "fold_values": [
+                0.462,
+                0.4647,
+                0.4581,
+                0.4647,
+                0.4657
+            ]
+        },
+        "f1_weighted": {
+            "mean": 0.5562,
+            "std": 0.001,
+            "fold_values": [
+                0.5554,
+                0.5579,
+                0.555,
+                0.5559,
+                0.5567
+            ]
+        },
+        "precision_weighted": {
+            "mean": 0.569,
+            "std": 0.0014,
+            "fold_values": [
+                0.5685,
+                0.5707,
+                0.567,
+                0.5684,
+                0.5703
+            ]
+        },
+        "recall_weighted": {
+            "mean": 0.5678,
+            "std": 0.0009,
+            "fold_values": [
+                0.5671,
+                0.5696,
+                0.5673,
+                0.5671,
+                0.568
+            ]
+        },
         "feature_importances": {
-            "growth_rate": 0.9873,
-            "Year": 0.0015,
-            "Latitude": 0.005,
-            "Longitude": 0.0036,
-            "System_enc": 0.0011,
-            "Region_enc": 0.0014
+            "Year": 0.1836,
+            "Latitude": 0.3826,
+            "Longitude": 0.3561,
+            "System_enc": 0.0527,
+            "Region_enc": 0.0249
         },
         "class_distribution": {
             "Growing": 160838,
             "Declining": 159519,
             "Stable": 28321
         },
-        "classification_report": {
+        "classification_report_cv": {
             "Declining": {
-                "precision": 1.0,
-                "recall": 0.9999686559679037,
-                "f1-score": 0.9999843277383359,
-                "support": 31904.0
+                "precision": 0.5684728493689939,
+                "recall": 0.6155881117609815,
+                "f1-score": 0.5910930930388643,
+                "support": 159519.0
             },
             "Stable": {
-                "precision": 0.9994706193753309,
-                "recall": 1.0,
-                "f1-score": 0.9997352396081546,
-                "support": 5664.0
+                "precision": 0.5863303752140744,
+                "recall": 0.1329755305250521,
+                "f1-score": 0.21678563205157725,
+                "support": 28321.0
             },
             "Growing": {
-                "precision": 1.0,
-                "recall": 0.9999378264113404,
-                "f1-score": 0.9999689122392514,
-                "support": 32168.0
+                "precision": 0.5664454473055481,
+                "recall": 0.5970044392494311,
+                "f1-score": 0.5813236144366783,
+                "support": 160838.0
             },
-            "accuracy": 0.9999569806125961,
+            "accuracy": 0.5678161512914495,
             "macro avg": {
-                "precision": 0.9998235397917771,
-                "recall": 0.9999688274597481,
-                "f1-score": 0.9998961598619139,
-                "support": 69736.0
+                "precision": 0.5737495572962055,
+                "recall": 0.4485226938451549,
+                "f1-score": 0.4630674465090399,
+                "support": 348678.0
             },
             "weighted avg": {
-                "precision": 0.9999570033862262,
-                "recall": 0.9999569806125961,
-                "f1-score": 0.9999569857493503,
-                "support": 69736.0
+                "precision": 0.5689881089964383,
+                "recall": 0.5678161512914495,
+                "f1-score": 0.5561839074807294,
+                "support": 348678.0
             }
         },
-        "confusion_matrix": [
+        "confusion_matrix_cv": [
             [
-                31903,
-                1,
-                0
+                98198,
+                1428,
+                59893
             ],
             [
-                0,
-                5664,
-                0
+                10954,
+                3766,
+                13601
             ],
             [
-                0,
-                2,
-                32166
+                63588,
+                1229,
+                96021
             ]
         ],
         "label_map": {
@@ -86,8 +145,8 @@
         ],
         "species_evaluated": 4,
         "forecast_horizon_years": 6,
-        "avg_mae": 4867817.5794,
-        "avg_rmse": 6486814.9531,
+        "avg_mae": 4867817.06,
+        "avg_rmse": 6486814.4082,
         "per_species": {
             "Acanthis_flammea": {
                 "mae": 3970.9514,
@@ -114,27 +173,27 @@
                 }
             },
             "Gadus_morhua": {
-                "mae": 18855049.5498,
-                "rmse": 25277578.8575,
+                "mae": 18855049.5571,
+                "rmse": 25277578.8422,
                 "forecast": {
-                    "2026": 955804.36,
-                    "2027": 977689.38,
-                    "2028": 961317.33,
-                    "2029": 973557.95,
-                    "2030": 964408.51,
-                    "2031": 971246.67
+                    "2026": 955804.44,
+                    "2027": 977689.56,
+                    "2028": 961317.44,
+                    "2029": 973558.11,
+                    "2030": 964408.63,
+                    "2031": 971246.82
                 }
             },
             "Alauda_arvensis": {
-                "mae": 612211.2176,
-                "rmse": 665667.5771,
+                "mae": 612209.1327,
+                "rmse": 665665.4127,
                 "forecast": {
-                    "2026": 447272.59,
-                    "2027": 502235.4,
-                    "2028": 552932.89,
-                    "2029": 599696.07,
-                    "2030": 642830.26,
-                    "2031": 682617.08
+                    "2026": 447272.65,
+                    "2027": 502235.46,
+                    "2028": 552932.95,
+                    "2029": 599696.14,
+                    "2030": 642830.33,
+                    "2031": 682617.16
                 }
             }
         }
