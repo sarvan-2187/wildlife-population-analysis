@@ -32,17 +32,28 @@ import {
   Database
 } from "lucide-react";
 import { API_ENDPOINTS } from "../../lib/api-config";
+import { ARIMAProjectionsChart } from "../../components/ARIMAProjectionsChart";
 
 export default function ModelsPage() {
   const [metrics, setMetrics] = useState<any>(null);
+  const [integratedPredictions, setIntegratedPredictions] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.MODEL_METRICS)
-      .then(res => res.json())
-      .then(data => { setMetrics(data); setLoading(false); })
-      .catch(() => { setError("Failed to fetch model metrics. Is the backend running?"); setLoading(false); });
+    Promise.all([
+      fetch(API_ENDPOINTS.MODEL_METRICS).then(res => res.json()),
+      fetch(API_ENDPOINTS.INTEGRATED_PREDICTIONS).then(res => res.json()).catch(() => null)
+    ])
+      .then(([data, predictions]) => { 
+        setMetrics(data); 
+        setIntegratedPredictions(predictions);
+        setLoading(false); 
+      })
+      .catch(() => { 
+        setError("Failed to fetch model metrics. Is the backend running?"); 
+        setLoading(false); 
+      });
   }, []);
 
   if (loading) return (
@@ -329,6 +340,100 @@ export default function ModelsPage() {
           ))}
         </div>
       </div>
+
+      {/* ── Integrated Predictions (Classifier + TimeSeries) ─────────────── */}
+      {integratedPredictions && (
+        <div className="space-y-8 pt-8 pb-12">
+          <div className="flex items-center gap-4 border-b border-zinc-900 pb-6">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/20 border border-white/10">
+              <Zap className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-zinc-100 tracking-tight">Integrated Prediction Engine</h2>
+              <p className="text-xs text-zinc-500 uppercase font-black tracking-widest mt-1">
+                Classifier + Time Series Coordination // {integratedPredictions?.metrics?.species_successful || 0} Species Analyzed
+              </p>
+            </div>
+          </div>
+
+          {/* ARIMA Stochastic Projections Charts */}
+          {integratedPredictions?.predictions && (
+            <ARIMAProjectionsChart predictions={integratedPredictions.predictions} />
+          )}
+
+          {/* Summary Metrics Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-6">
+            {[
+              { label: "Species Evaluated", value: integratedPredictions?.metrics?.species_evaluated || 0, icon: <Globe />, color: "text-cyan-400" },
+              { label: "Successful Predictions", value: integratedPredictions?.metrics?.species_successful || 0, icon: <CheckCircle2 />, color: "text-emerald-400" },
+              { label: "Success Rate", value: `${((integratedPredictions?.metrics?.success_rate || 0) * 100).toFixed(1)}%`, icon: <Sparkles />, color: "text-amber-400" },
+              { label: "Forecast Horizon", value: "6 Years", icon: <History />, color: "text-violet-400" },
+            ].map((s, i) => (
+              <div key={i} className={`group relative overflow-hidden glass-panel p-4 rounded-2xl border border-zinc-800/50 bg-zinc-900/20 hover:border-zinc-700 transition-all duration-500`}>
+                <div className="absolute -right-4 -top-4 w-16 h-16 bg-zinc-400/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                <div className="flex justify-between items-start mb-3">
+                  <div className={`p-1.5 rounded-lg bg-black/40 ${s.color} group-hover:scale-110 group-hover:rotate-12 transition-all`}>
+                    {s.icon}
+                  </div>
+                  <div className="text-[10px] font-black text-zinc-700 uppercase">0{i + 1}</div>
+                </div>
+                <p className="text-[10px] text-zinc-500 mb-1 uppercase tracking-wider font-bold">{s.label}</p>
+                <p className={`text-lg md:text-xl font-black ${s.color} tracking-tighter`}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-4 pt-4">
+            <h3 className="text-lg font-black text-zinc-200 flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" /> Alignment Status & Prediction Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.entries(integratedPredictions?.predictions ?? {}).slice(0, 6).map(([species, pred]: [string, any]) => {
+                const alignment = pred?.integration?.trend_alignment;
+                const currentTrend = pred?.current_trend?.trend;
+                const forecastTrend = pred?.forecast_trend?.forecast_trend;
+                
+                return (
+                  <div key={species} className={`p-6 rounded-[2rem] border-l-4 transition-all ${alignment ? "bg-emerald-500/10 border-emerald-500/50" : "bg-amber-500/10 border-amber-500/50"}`}>
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h4 className="text-base font-black text-zinc-100 mb-1">{species.replace(/_/g, " ")}</h4>
+                        <p className={`text-xs font-black uppercase tracking-widest ${alignment ? "text-emerald-400" : "text-amber-400"}`}>
+                          {alignment ? "✓ Aligned" : "⚠ Divergent"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-zinc-600 font-bold uppercase mb-1">Confidence</p>
+                        <p className="text-lg font-black text-cyan-400">{((pred?.current_trend?.confidence || 0) * 100).toFixed(0)}%</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                        <p className="text-[10px] text-zinc-600 font-bold uppercase mb-1">Current</p>
+                        <p className={`text-sm font-black ${currentTrend === "Declining" ? "text-red-400" : currentTrend === "Growing" ? "text-emerald-400" : "text-amber-400"}`}>
+                          {currentTrend}
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                        <p className="text-[10px] text-zinc-600 font-bold uppercase mb-1">Forecast</p>
+                        <p className={`text-sm font-black ${forecastTrend === "Declining" ? "text-red-400" : forecastTrend === "Growing" ? "text-emerald-400" : "text-amber-400"}`}>
+                          {forecastTrend}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                      <p className="text-[10px] text-zinc-600 font-bold uppercase mb-1">Population (Current)</p>
+                      <p className="text-sm font-black text-blue-400 font-mono">{(pred?.current_population || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ router = APIRouter()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DASHBOARD_DATA_PATH = os.path.join(BASE_DIR, "data", "dashboard_data.json")
 MODEL_METRICS_PATH = os.path.join(BASE_DIR, "data", "model_metrics.json")
+INTEGRATED_PREDICTIONS_PATH = os.path.join(BASE_DIR, "data", "integrated_predictions.json")
 
 @router.get("/dashboard", tags=["Data"])
 async def get_dashboard_data():
@@ -34,6 +35,49 @@ async def get_model_metrics():
         )
     with open(MODEL_METRICS_PATH, "r") as f:
         return json.load(f)
+
+@router.get("/integrated-predictions", tags=["ML"])
+async def get_integrated_predictions():
+    """
+    Get integrated predictions coordinating decline classifier + time series forecasts.
+    Provides comprehensive species population intelligence with growth inference.
+    """
+    if not os.path.exists(INTEGRATED_PREDICTIONS_PATH):
+        raise HTTPException(
+            status_code=404,
+            detail="Integrated predictions not found. Run the integrated prediction engine first."
+        )
+    with open(INTEGRATED_PREDICTIONS_PATH, "r") as f:
+        return json.load(f)
+
+@router.get("/species/{species_name}/prediction", tags=["ML"])
+async def get_species_prediction(species_name: str):
+    """
+    Get detailed integrated prediction for a specific species.
+    Includes current trend, forecast, and growth inference.
+    """
+    if not os.path.exists(INTEGRATED_PREDICTIONS_PATH):
+        raise HTTPException(
+            status_code=404,
+            detail="Integrated predictions not found."
+        )
+    
+    with open(INTEGRATED_PREDICTIONS_PATH, "r") as f:
+        all_predictions = json.load(f)
+    
+    # Species name in predictions file uses underscores (e.g., "Acanthis_flammea")
+    species_underscore = species_name.replace("-", "_")
+    
+    if species_underscore not in all_predictions.get("predictions", {}):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Prediction not found for species: {species_name}"
+        )
+    
+    return {
+        "species": species_underscore,
+        "prediction": all_predictions["predictions"][species_underscore]
+    }
 
 @router.post("/chat", tags=["RAG"])
 async def rag_chat(message: str):
