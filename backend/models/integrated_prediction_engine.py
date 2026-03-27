@@ -22,6 +22,7 @@ import pickle
 import json
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+from typing import Optional
 
 warnings.filterwarnings("ignore")
 
@@ -321,7 +322,7 @@ def generate_species_prediction(species: str, df: pd.DataFrame, classifier_bundl
     return prediction
 
 
-def run_integrated_prediction_engine(top_n_species: int = 15) -> dict:
+def run_integrated_prediction_engine(top_n_species: Optional[int] = 15) -> dict:
     """
     Run the integrated prediction engine for top N species.
     Returns comprehensive predictions coordinating classifier + time series.
@@ -354,11 +355,17 @@ def run_integrated_prediction_engine(top_n_species: int = 15) -> dict:
     
     classifier_bundle = load_classifier()
     
-    # Select top species by sample count
+    # Select species by sample count (all species when top_n_species is None)
     species_counts = df.groupby("Binomial").size().sort_values(ascending=False)
-    top_species = species_counts.head(top_n_species).index.tolist()
+    if top_n_species is None:
+        top_species = species_counts.index.tolist()
+    else:
+        top_species = species_counts.head(top_n_species).index.tolist()
     
-    print(f"[IntegratedEngine] Found {len(df['Binomial'].unique())} species, evaluating top {top_n_species}")
+    if top_n_species is None:
+        print(f"[IntegratedEngine] Found {len(df['Binomial'].unique())} species, evaluating all species")
+    else:
+        print(f"[IntegratedEngine] Found {len(df['Binomial'].unique())} species, evaluating top {top_n_species}")
     
     predictions = {}
     success_count = 0
@@ -405,7 +412,7 @@ def run_integrated_prediction_engine(top_n_species: int = 15) -> dict:
     }
 
 
-def _fallback_predictions(top_n_species=15) -> dict:
+def _fallback_predictions(top_n_species: Optional[int] = 15) -> dict:
     """
     Fallback prediction generator using dashboard data when CSV is unavailable.
     Creates realistic predictions from available aggregated data.
@@ -422,8 +429,8 @@ def _fallback_predictions(top_n_species=15) -> dict:
     predictions = {}
     species_list = dashboard_data.get("species_data", [])
     
-    # Select top species by considering available ones
-    selected_species = list(species_list)[:top_n_species]
+    # Select species by considering available ones (all species when top_n_species is None)
+    selected_species = list(species_list) if top_n_species is None else list(species_list)[:top_n_species]
     success_count = 0
     
     for idx, species_info in enumerate(selected_species):
@@ -463,6 +470,10 @@ def _fallback_predictions(top_n_species=15) -> dict:
             confidence = np.clip(base_confidence + stability_factor, 0.52, 0.93)
             
             # Create prediction structure
+            alignment = current_trend == forecast_trend or \
+                        (current_trend == "Stable" and forecast_trend in ["Stable", "Growing"])
+            alignment_score = float(confidence) if alignment else float(1 - confidence)
+
             prediction = {
                 "current_trend": {
                     "trend": current_trend,
@@ -476,8 +487,9 @@ def _fallback_predictions(top_n_species=15) -> dict:
                 },
                 "current_population": int(pop),
                 "integration": {
-                    "trend_alignment": current_trend == forecast_trend or 
-                                      (current_trend == "Stable" and forecast_trend in ["Stable", "Growing"])
+                    "trend_alignment": alignment,
+                    "alignment_score": round(float(np.clip(alignment_score, 0, 1)), 4),
+                    "recommendation": "HIGH_CONFIDENCE" if alignment else "REVIEW_FORECAST"
                 },
                 "historical_data": {
                     "years": list(range(1990, 2025)),
@@ -525,7 +537,7 @@ def _fallback_predictions(top_n_species=15) -> dict:
 
 
 if __name__ == "__main__":
-    result = run_integrated_prediction_engine(top_n_species=15)
+    result = run_integrated_prediction_engine(top_n_species=None)
     
     # Save to JSON
     output_path = os.path.join(BASE_DIR, "data", "integrated_predictions.json")
