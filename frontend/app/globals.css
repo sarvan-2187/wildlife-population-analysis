@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --color-primary: #10b981;
-  --color-primary-foreground: #ffffff;
-  --color-muted: #27272a;
-  --color-muted-foreground: #a1a1aa;
-  --color-border: #27272a;
+  --color-background: #081019;
+  --color-foreground: #e6f2ef;
+  --color-primary: #63e6be;
+  --color-primary-foreground: #082024;
+  --color-muted: #17232f;
+  --color-muted-foreground: #8fa5a1;
+  --color-border: #2a3f4b;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-domine, serif);
+  font-family: var(--font-display, serif);
 }
 
 body {
@@ -19,13 +19,15 @@ body {
   color: var(--color-foreground);
   margin: 0;
   padding: 0;
+  min-height: 100vh;
 }
 
 .glass-panel {
-  background: rgba(39, 39, 42, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(145deg, rgba(18, 34, 44, 0.72), rgba(10, 22, 32, 0.48));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(162, 225, 206, 0.18);
+  box-shadow: inset 0 1px 0 rgba(212, 255, 245, 0.14), 0 22px 45px rgba(0, 0, 0, 0.3);
 }
 
 .glow-card {
@@ -36,13 +38,56 @@ body {
   content: "";
   position: absolute;
   inset: -1px;
-  background: linear-gradient(to right, #10b981, #3b82f6);
+  background: linear-gradient(120deg, #63e6be, #58b6ff, #ffd28c);
   z-index: -1;
   border-radius: inherit;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.35s ease;
 }
 
 .glow-card:hover::before {
-  opacity: 0.5;
+  opacity: 0.55;
+}
+
+.bg-shell {
+  background:
+    radial-gradient(circle at 16% 18%, rgba(99, 230, 190, 0.2), transparent 36%),
+    radial-gradient(circle at 85% 14%, rgba(88, 182, 255, 0.2), transparent 32%),
+    radial-gradient(circle at 60% 84%, rgba(255, 210, 140, 0.16), transparent 30%),
+    #061017;
+}
+
+.bg-aurora {
+  background-image:
+    linear-gradient(120deg, rgba(84, 194, 173, 0.08), transparent 42%),
+    linear-gradient(300deg, rgba(49, 113, 184, 0.08), transparent 35%);
+}
+
+.glass-chip {
+  border: 1px solid rgba(180, 240, 225, 0.2);
+  background: rgba(7, 16, 25, 0.55);
+  backdrop-filter: blur(10px);
+}
+
+.section-heading {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #90aaa3;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.hero-fade {
+  animation: hero-fade 680ms ease-out both;
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

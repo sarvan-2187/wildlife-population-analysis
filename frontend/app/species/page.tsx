@@ -1,27 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { 
-  Search, 
-  ArrowUpDown, 
-  Filter, 
-  Bird, 
-  Waves, 
-  Mountain, 
-  Database, 
-  ChevronRight,
-  ClipboardList,
-  Sparkles,
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  AlertCircle,
+  ArrowUpDown,
+  Bird,
+  CheckCircle2,
+  Database,
   Globe,
+  LineChart as LineChartIcon,
+  Mountain,
+  Search,
   TrendingDown,
   TrendingUp,
-  AlertCircle,
-  CheckCircle2,
-  LineChart as LineChartIcon,
-  X
+  Waves,
+  X,
 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
-import { API_ENDPOINTS, getSpeciesPredictionUrl } from "../../lib/api-config";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { API_ENDPOINTS } from "../../lib/api-config";
+
+type SortDirection = "asc" | "desc";
 
 export default function SpeciesPage() {
   const [species, setSpecies] = useState<any[]>([]);
@@ -30,61 +37,108 @@ export default function SpeciesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [systemFilter, setSystemFilter] = useState("All Systems");
   const [statusFilter, setStatusFilter] = useState("All Status");
-  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: SortDirection } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedSpecies, setSelectedSpecies] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const rowsPerPage = 12;
 
   useEffect(() => {
     Promise.all([
-      fetch(API_ENDPOINTS.DASHBOARD).then(res => res.json()),
-      fetch(API_ENDPOINTS.INTEGRATED_PREDICTIONS).then(res => res.json())
+      fetch(API_ENDPOINTS.DASHBOARD).then((res) => res.json()),
+      fetch(API_ENDPOINTS.INTEGRATED_PREDICTIONS)
+        .then((res) => res.json())
+        .catch(() => null),
     ])
       .then(([dashboardData, predictionsData]) => {
         setSpecies(dashboardData.species_data || []);
         setIntegratedPredictions(predictionsData);
-        setLoading(false);
       })
-      .catch(err => {
-        console.error("Error fetching data:", err);
-        setLoading(false);
-      });
+      .catch((err) => console.error("Error fetching species data:", err))
+      .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = showDetailModal ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showDetailModal]);
+
   const handleSort = (key: string) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction: SortDirection = "asc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
     }
     setSortConfig({ key, direction });
   };
 
-  const uniqueSystems = ["All Systems", ...Array.from(new Set(species.map(s => s.system)))];
+  const uniqueSystems = useMemo(
+    () => ["All Systems", ...Array.from(new Set(species.map((s) => s.system)))],
+    [species]
+  );
+
   const uniqueStatuses = ["All Status", "Declining", "Stable", "Growing"];
 
-  const filteredSpecies = species.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         s.system.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         s.region.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         s.binomial.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSystem = systemFilter === "All Systems" || s.system === systemFilter;
-    const matchesStatus = statusFilter === "All Status" || s.status === statusFilter;
-    return matchesSearch && matchesSystem && matchesStatus;
-  });
+  const filteredSpecies = useMemo(
+    () =>
+      species.filter((s) => {
+        const text = searchTerm.toLowerCase();
+        const matchesSearch =
+          s.name.toLowerCase().includes(text) ||
+          s.system.toLowerCase().includes(text) ||
+          s.region.toLowerCase().includes(text) ||
+          s.binomial.toLowerCase().includes(text);
 
-  const sortedSpecies = [...filteredSpecies].sort((a, b) => {
-    if (!sortConfig) return 0;
+        const matchesSystem = systemFilter === "All Systems" || s.system === systemFilter;
+        const matchesStatus = statusFilter === "All Status" || s.status === statusFilter;
+
+        return matchesSearch && matchesSystem && matchesStatus;
+      }),
+    [species, searchTerm, systemFilter, statusFilter]
+  );
+
+  const sortedSpecies = useMemo(() => {
+    const list = [...filteredSpecies];
+    if (!sortConfig) return list;
+
     const { key, direction } = sortConfig;
-    if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-    if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
-    return 0;
-  });
+    return list.sort((a, b) => {
+      const aValue = a[key];
+      const bValue = b[key];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Declining": return "text-red-400 bg-red-400/10 border-red-400/20";
-      case "Growing": return "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
-      default: return "text-amber-400 bg-amber-400/10 border-amber-400/20";
+      if (aValue < bValue) return direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredSpecies, sortConfig]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedSpecies.length / rowsPerPage));
+  const paginatedSpecies = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return sortedSpecies.slice(start, start + rowsPerPage);
+  }, [sortedSpecies, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, systemFilter, statusFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
     }
+  }, [currentPage, totalPages]);
+
+  const getStatusChip = (status: string) => {
+    if (status === "Declining") return "text-[#ffb29f] bg-[#3b2024] border-[#6a3239]";
+    if (status === "Growing") return "text-[#8ff0d1] bg-[#16392f] border-[#2a6f5a]";
+    return "text-[#b6d7ff] bg-[#1a2f45] border-[#385b82]";
   };
 
   const getSystemIcon = (system: string) => {
@@ -95,408 +149,327 @@ export default function SpeciesPage() {
 
   const getPredictionForSpecies = (binomial: string) => {
     if (!integratedPredictions?.predictions) return null;
-    return integratedPredictions.predictions[binomial];
+    return integratedPredictions.predictions[binomial] || null;
   };
 
-  const handleSpeciesClick = (speciesData: any) => {
-    const prediction = getPredictionForSpecies(speciesData.binomial);
-    setSelectedSpecies({ ...speciesData, prediction });
+  const openSpeciesDetail = (speciesData: any) => {
+    setSelectedSpecies({
+      ...speciesData,
+      prediction: getPredictionForSpecies(speciesData.binomial),
+    });
     setShowDetailModal(true);
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="text-center space-y-4">
-        <div className="w-12 h-12 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin mx-auto" />
-        <p className="text-zinc-600 font-bold uppercase tracking-widest text-[10px]">Accessing Species Record Set...</p>
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-5 md:px-10 py-10">
+        <div className="glass-panel rounded-3xl p-8 text-center text-[#a8c6be]">Loading species intelligence feed...</div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  const trackedDeclining = species.filter((s) => s.status === "Declining").length;
 
   return (
-    <div className="p-4 md:p-8 w-full max-w-7xl mx-auto flex flex-col space-y-10 mb-20">
-      <header className="space-y-6 border-b border-[#27272a] pb-8">
-         <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 shadow-lg shadow-emerald-500/20 border border-white/10">
-               <ClipboardList className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl md:text-5xl font-black bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent tracking-tighter">
-                EcoDynamix Species Inventory
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                 <p className="text-[10px] md:text-xs text-zinc-500 font-bold uppercase tracking-widest leading-none pt-0.5">Database Sync: ACTIVE // LPD 2024 + Predictions</p>
-              </div>
-            </div>
-         </div>
-         
-         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <p className="text-zinc-500 text-sm md:text-base leading-relaxed max-w-2xl">
-              Comprehensive telemetry with integrated trend classification and population forecasts. Click species for growth charts.
+    <div className="max-w-7xl mx-auto px-5 md:px-10 py-8 md:py-10 space-y-6 mb-12">
+      <header className="glass-panel rounded-3xl p-6 md:p-8">
+        <p className="section-heading">Species Intelligence</p>
+        <div className="mt-2 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-5xl text-[#e9fff8] font-bold">Global Species Inventory and Forecasts</h1>
+            <p className="mt-3 text-[#9ebcb4] max-w-3xl">
+              Filter telemetry across systems and regions, then inspect model-assisted trajectory and trend alignment for each species.
             </p>
-            
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex gap-2">
-                <select 
-                  className="bg-[#0a0a0b] border border-[#27272a] rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-emerald-500/50 transition-all cursor-pointer appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2371717a%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%3D%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')]"
-                  style={{ backgroundSize: '1rem' }}
-                  value={systemFilter}
-                  onChange={(e) => setSystemFilter(e.target.value)}
-                >
-                  {uniqueSystems.map(sys => <option key={sys} value={sys}>{sys}</option>)}
-                </select>
-
-                <select 
-                   className="bg-[#0a0a0b] border border-[#27272a] rounded-xl px-4 py-2.5 text-xs text-zinc-300 focus:outline-none focus:border-emerald-500/50 transition-all cursor-pointer appearance-none pr-8 bg-no-repeat bg-[right_0.75rem_center] bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2371717a%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%3D%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')]"
-                   style={{ backgroundSize: '1rem' }}
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  {uniqueStatuses.map(st => <option key={st} value={st}>{st}</option>)}
-                </select>
-              </div>
-
-              <div className="relative group w-full md:w-80">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-emerald-400 transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Search species, binomials, or regions..."
-                  className="w-full bg-[#0a0a0b] border border-[#27272a] rounded-2xl py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:border-emerald-500/50 transition-all shadow-inner"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-         </div>
+          </div>
+          <div className="glass-chip rounded-2xl px-4 py-3 text-xs uppercase tracking-[0.14em] text-[#bde6db] inline-flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            Source: LPD 2024 + Integrated Predictions
+          </div>
+        </div>
       </header>
 
-      {/* ── Desktop Summary Stats ───────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-         {[
-           { label: "Tracked Entities", value: species.length, icon: <Database /> },
-           { label: "Global Coverage", value: "208 Regions", icon: <Globe /> },
-           { label: "Critically Declining", value: species.filter(s => s.status === "Declining").length, icon: <TrendingDown className="text-red-500" /> },
-           { label: "Predictions Available", value: integratedPredictions?.metrics?.species_successful || "0", icon: <LineChartIcon className="text-cyan-500" /> },
-         ].map((s, i) => (
-           <div key={i} className="glass-panel p-5 rounded-[1.5rem] border border-zinc-900 flex justify-between items-center group">
-              <div>
-                <p className="text-[10px] text-zinc-600 font-black uppercase mb-1">{s.label}</p>
-                <p className="text-xl font-black text-zinc-300 tracking-tighter">{s.value}</p>
-              </div>
-              <div className="p-2 rounded-xl bg-zinc-900 group-hover:scale-110 transition-transform text-zinc-500">
-                {s.icon}
-              </div>
-           </div>
-         ))}
-      </div>
+      <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Tracked species", value: species.length.toLocaleString(), icon: Database },
+          { label: "Declining", value: trackedDeclining.toLocaleString(), icon: TrendingDown },
+          { label: "Forecast coverage", value: String(integratedPredictions?.metrics?.species_successful || 0), icon: LineChartIcon },
+          { label: "Global footprint", value: "208 regions", icon: Globe },
+        ].map((card) => {
+          const Icon = card.icon;
+          return (
+            <article key={card.label} className="glass-panel rounded-2xl p-5 glow-card">
+              <p className="text-xs uppercase tracking-[0.14em] text-[#8ca8a1] inline-flex items-center gap-2">
+                <Icon className="w-4 h-4" />
+                {card.label}
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-[#e8fff7]">{card.value}</p>
+            </article>
+          );
+        })}
+      </section>
 
-      <div className="glass-panel overflow-hidden rounded-[2rem] border border-[#27272a] shadow-2xl relative">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-[#0a0a0b] border-b border-[#27272a]">
+      <section className="glass-panel rounded-3xl p-5 md:p-6 space-y-4">
+        <div className="grid lg:grid-cols-[1fr_1fr_1.2fr] gap-3">
+          <select
+            value={systemFilter}
+            onChange={(e) => setSystemFilter(e.target.value)}
+            className="bg-[#0d1f2b] border border-[#31505d] rounded-xl px-4 py-3 text-sm text-[#d2f0e6] outline-none"
+          >
+            {uniqueSystems.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-[#0d1f2b] border border-[#31505d] rounded-xl px-4 py-3 text-sm text-[#d2f0e6] outline-none"
+          >
+            {uniqueStatuses.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+
+          <label className="relative">
+            <Search className="w-4 h-4 text-[#8faea6] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search name, binomial, region, system"
+              className="w-full bg-[#0d1f2b] border border-[#31505d] rounded-xl pl-10 pr-4 py-3 text-sm text-[#d2f0e6] placeholder:text-[#79958f] outline-none"
+            />
+          </label>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-[#31505d] bg-[#0b1a24]">
+          <table className="w-full min-w-245 text-left">
+            <thead className="bg-[#0f2230] border-b border-[#2e4a57]">
               <tr>
                 {[
-                  { label: "Binomial Designation", key: "name" },
-                  { label: "Systems", key: "system" },
-                  { label: "Territory", key: "region" },
-                  { label: "Momentum", key: "growth" },
-                  { label: "Census", key: "pop" },
-                  { label: "Health Status", key: "status" },
+                  { label: "Species", key: "name" },
+                  { label: "System", key: "system" },
+                  { label: "Region", key: "region" },
+                  { label: "Growth", key: "growth" },
+                  { label: "Population", key: "pop" },
+                  { label: "Status", key: "status" },
                   { label: "Forecast", key: "forecast" },
-                ].map((col) => (
-                  <th 
-                    key={col.key}
-                    onClick={() => col.key !== "forecast" && handleSort(col.key)}
-                    className="px-8 py-6 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] cursor-pointer hover:text-zinc-100 transition-colors group"
+                ].map((column) => (
+                  <th
+                    key={column.key}
+                    onClick={() => column.key !== "forecast" && handleSort(column.key)}
+                    className="px-5 py-4 text-xs uppercase tracking-[0.12em] text-[#8ba9a1] font-semibold"
                   >
-                    <div className="flex items-center gap-2">
-                       {col.key !== "forecast" && <ArrowUpDown className="w-3 h-3 text-zinc-700 group-hover:text-emerald-500 transition-colors" />}
-                       {col.label}
-                    </div>
+                    <span className="inline-flex items-center gap-2">
+                      {column.key !== "forecast" && <ArrowUpDown className="w-3 h-3" />}
+                      {column.label}
+                    </span>
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#27272a]">
-              {sortedSpecies.map((s, i) => {
-                const prediction = getPredictionForSpecies(s.binomial);
-                const forecastTrend = prediction?.forecast_trend;
+            <tbody>
+              {paginatedSpecies.map((item, idx) => {
+                const prediction = getPredictionForSpecies(item.binomial);
+                const forecastTrend = prediction?.forecast_trend?.forecast_trend || null;
                 const alignment = prediction?.integration?.trend_alignment;
-                
+
                 return (
-                  <tr key={i} className="hover:bg-white/[0.03] transition-colors group cursor-pointer" onClick={() => handleSpeciesClick(s)}>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col">
-                        <span className="text-base font-black text-zinc-100 italic tracking-tight leading-none mb-1.5">{s.name}</span>
-                        <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{s.binomial}</span>
-                      </div>
+                  <tr
+                    key={`${item.binomial}-${idx}`}
+                    className="border-b border-[#213844] hover:bg-[#112737] transition cursor-pointer"
+                    onClick={() => openSpeciesDetail(item)}
+                  >
+                    <td className="px-5 py-4">
+                      <p className="text-[#e5fff6] font-semibold">{item.name}</p>
+                      <p className="text-xs text-[#8ca8a1] uppercase tracking-widest mt-1">{item.binomial}</p>
                     </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2 text-zinc-400 text-xs font-bold">
-                         <div className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                            {getSystemIcon(s.system)}
-                         </div>
-                         {s.system}
-                      </div>
+                    <td className="px-5 py-4 text-sm text-[#cbe8df]">
+                      <span className="inline-flex items-center gap-2">{getSystemIcon(item.system)} {item.system}</span>
                     </td>
-                    <td className="px-8 py-6">
-                      <span className="text-xs text-zinc-500 font-medium tracking-tight">{s.region}</span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2">
-                         <div className={`w-1 h-3 rounded-full ${s.growth < 0 ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                         <span className={`text-sm font-black font-mono ${s.growth < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                           {s.growth > 0 ? '+' : ''}{s.growth}%
-                         </span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6 text-sm text-zinc-300 font-black tracking-tighter">
-                      {s.pop.toLocaleString()}
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${getStatusColor(s.status)}`}>
-                        {s.status}
+                    <td className="px-5 py-4 text-sm text-[#b7d4cc]">{item.region}</td>
+                    <td className="px-5 py-4 text-sm font-semibold">
+                      <span className={item.growth >= 0 ? "text-[#86efcc]" : "text-[#ffb29f]"}>
+                        {item.growth > 0 ? "+" : ""}
+                        {item.growth}%
                       </span>
                     </td>
-                    <td className="px-8 py-6">
-                      {prediction && forecastTrend ? (
-                        <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-lg ${alignment ? 'bg-emerald-500/20 border border-emerald-500/50' : 'bg-amber-500/20 border border-amber-500/50'}`}>
-                            {forecastTrend?.forecast_trend === "Declining" && <TrendingDown className="w-4 h-4 text-red-400" />}
-                            {forecastTrend?.forecast_trend === "Growing" && <TrendingUp className="w-4 h-4 text-emerald-400" />}
-                            {forecastTrend?.forecast_trend === "Stable" && <LineChartIcon className="w-4 h-4 text-amber-400" />}
-                          </div>
-                          <span className="text-xs font-black text-zinc-400">{forecastTrend?.forecast_trend}</span>
-                        </div>
+                    <td className="px-5 py-4 text-sm text-[#d4f2e8]">{Number(item.pop).toLocaleString()}</td>
+                    <td className="px-5 py-4">
+                      <span className={`px-3 py-1 rounded-full border text-xs uppercase tracking-[0.08em] ${getStatusChip(item.status)}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-sm">
+                      {forecastTrend ? (
+                        <span className={alignment ? "text-[#8ff0d1]" : "text-[#ffcc8e]"}>{forecastTrend}</span>
                       ) : (
-                        <span className="text-xs text-zinc-600">—</span>
+                        <span className="text-[#7f9a93]">No forecast</span>
                       )}
                     </td>
                   </tr>
                 );
               })}
-              {sortedSpecies.length === 0 && (
+
+              {!sortedSpecies.length && (
                 <tr>
-                  <td colSpan={7} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center gap-4">
-                       <div className="p-4 rounded-full bg-zinc-900 border border-zinc-800">
-                          <Search className="w-8 h-8 text-zinc-700" />
-                       </div>
-                       <p className="text-sm text-zinc-600 font-bold uppercase tracking-widest">No telemetry matching criteria</p>
-                    </div>
+                  <td colSpan={7} className="px-5 py-14 text-center text-[#88a59e]">
+                    No species match the current filters.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
-      
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-black text-zinc-600 uppercase tracking-widest border-t border-zinc-900 pt-8">
-        <p className="flex items-center gap-2">
-           <Database className="w-3 h-3" /> Showing {sortedSpecies.length} indexed observation points
-        </p>
-        <p className="text-zinc-500 italic">EcoDynamix Telemetry Feed // {new Date().toLocaleDateString()}</p>
-      </div>
 
-      {/* Detail Modal */}
-      {showDetailModal && selectedSpecies && (
-        <GrowthInferenceModal 
-          species={selectedSpecies} 
-          onClose={() => setShowDetailModal(false)} 
-        />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+          <p className="text-sm text-[#8aa79f]">
+            Showing {sortedSpecies.length ? (currentPage - 1) * rowsPerPage + 1 : 0}
+            {" "}-{" "}
+            {Math.min(currentPage * rowsPerPage, sortedSpecies.length)} of {sortedSpecies.length}
+          </p>
+          <div className="inline-flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-2 rounded-lg border border-[#35515d] bg-[#0e1f2b] text-[#cdebe2] disabled:opacity-45"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-[#cdebe2] px-2">
+              Page {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 rounded-lg border border-[#35515d] bg-[#0e1f2b] text-[#cdebe2] disabled:opacity-45"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {isMounted && showDetailModal && selectedSpecies && createPortal(
+        <SpeciesDetailModal species={selectedSpecies} onClose={() => setShowDetailModal(false)} />,
+        document.body
       )}
     </div>
   );
 }
 
-function GrowthInferenceModal({ species, onClose }: { species: any; onClose: () => void }) {
+function SpeciesDetailModal({ species, onClose }: { species: any; onClose: () => void }) {
   const prediction = species.prediction;
-  if (!prediction) return null;
+
+  if (!prediction) {
+    return (
+      <div className="fixed inset-0 z-9999 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+        <div className="glass-panel rounded-3xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl text-[#e8fff7] font-semibold">{species.name}</h3>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg bg-[#122632] border border-[#385663] text-[#b7d6cd]">
+              <X className="w-4 h-4 mx-auto" />
+            </button>
+          </div>
+          <p className="mt-4 text-[#9cbab2]">No integrated forecast currently available for this species.</p>
+        </div>
+      </div>
+    );
+  }
 
   const currentTrend = prediction.current_trend;
   const forecastTrend = prediction.forecast_trend;
   const integration = prediction.integration;
   const historicalData = prediction.historical_data;
   const forecastData = prediction.forecast;
-  const timeSeriesModel = prediction.time_series_model;
 
-  // Prepare chart data
-  const chartDataHistorical = historicalData.years.map((year: number, idx: number) => ({
-    year: year,
-    population: historicalData.populations[idx],
-    type: "historical"
-  }));
-
-  const chartDataForecast = forecastData.years.map((year: number, idx: number) => ({
-    year: year,
-    population: forecastData.populations[idx],
-    type: "forecast"
-  }));
-
-  const allChartData = [...chartDataHistorical, ...chartDataForecast];
+  const chartData = [
+    ...(historicalData?.years || []).map((year: number, idx: number) => ({
+      year,
+      population: historicalData.populations[idx],
+      phase: "historical",
+    })),
+    ...(forecastData?.years || []).map((year: number, idx: number) => ({
+      year,
+      population: forecastData.populations[idx],
+      phase: "forecast",
+    })),
+  ];
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-[#0a0a0b] border border-[#27272a] rounded-[2rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-[#0a0a0b] border-b border-[#27272a] p-6 flex justify-between items-start">
+    <div className="fixed inset-0 z-9999 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="glass-panel rounded-3xl p-5 md:p-6 w-full max-w-5xl max-h-[92dvh] overflow-y-auto border border-[#345260]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-start gap-4">
           <div>
-            <h2 className="text-2xl font-black text-zinc-100 mb-1">{species.name}</h2>
-            <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{species.binomial}</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-[#89aca2]">Species profile</p>
+            <h3 className="text-2xl text-[#e8fff7] font-semibold mt-1">{species.name}</h3>
+            <p className="text-[#98b5ad] text-sm mt-1">{species.binomial}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-900 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-zinc-400" />
+          <button onClick={onClose} className="w-9 h-9 rounded-lg bg-[#122632] border border-[#385663] text-[#b7d6cd]">
+            <X className="w-4 h-4 mx-auto" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-8 space-y-8">
-          {/* Current Status */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-black text-zinc-200 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-cyan-500" /> Current Status Classification
-            </h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-xs text-zinc-600 font-black uppercase mb-2">Trend</p>
-                <p className={`text-lg font-black ${currentTrend.trend === "Declining" ? "text-red-400" : currentTrend.trend === "Growing" ? "text-emerald-400" : "text-amber-400"}`}>
-                  {currentTrend.trend}
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-xs text-zinc-600 font-black uppercase mb-2">Classifier Confidence</p>
-                <p className="text-lg font-black text-cyan-400">{(currentTrend.confidence * 100).toFixed(1)}%</p>
-              </div>
-              <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-xs text-zinc-600 font-black uppercase mb-2">Growth Rate (Current)</p>
-                <p className={`text-lg font-black font-mono ${prediction.current_growth_rate > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                  {prediction.current_growth_rate > 0 ? "+" : ""}{prediction.current_growth_rate}%
-                </p>
-              </div>
-            </div>
-          </div>
+        <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard label="Current trend" value={currentTrend?.trend || "-"} />
+          <StatCard label="Confidence" value={`${((currentTrend?.confidence || 0) * 100).toFixed(1)}%`} />
+          <StatCard label="Forecast trend" value={forecastTrend?.forecast_trend || "-"} />
+          <StatCard label="Alignment" value={`${((integration?.alignment_score || 0) * 100).toFixed(1)}%`} />
+        </div>
 
-          {/* Growth Chart */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-black text-zinc-200 flex items-center gap-2">
-              <LineChartIcon className="w-5 h-5 text-emerald-500" /> Population Trajectory & Forecast
-            </h3>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={allChartData}>
-                  <defs>
-                    <linearGradient id="colorHistorical" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#a78bfa" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="#27272a" />
-                  <XAxis dataKey="year" stroke="#71717a" />
-                  <YAxis stroke="#71717a" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: "#0a0a0b", border: "1px solid #27272a" }}
-                    formatter={(value: any) => [value?.toLocaleString() || value, "Population"]}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="population" 
-                    stroke="#06b6d4" 
-                    fillOpacity={1} 
-                    fill="url(#colorHistorical)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Forecast Inference */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-black text-zinc-200 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-violet-500" /> Forecast Growth Inference (2026-2031)
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-xs text-zinc-600 font-black uppercase mb-2">Forecasted Trend</p>
-                <p className={`text-lg font-black ${forecastTrend?.forecast_trend === "Declining" ? "text-red-400" : forecastTrend?.forecast_trend === "Growing" ? "text-emerald-400" : "text-amber-400"}`}>
-                  {forecastTrend?.forecast_trend || "—"}
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-xs text-zinc-600 font-black uppercase mb-2">Forecast Growth Rate</p>
-                <p className={`text-lg font-black font-mono ${(forecastTrend?.forecast_growth_rate || 0) > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                  {(forecastTrend?.forecast_growth_rate || 0) > 0 ? "+" : ""}{forecastTrend?.forecast_growth_rate}%
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                <p className="text-xs text-zinc-600 font-black uppercase mb-2">Model Accuracy (RMSE)</p>
-                <p className="text-lg font-black text-blue-400">{timeSeriesModel?.rmse?.toLocaleString() || "—"}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Integration Validation */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-black text-zinc-200 flex items-center gap-2">
-              {integration?.trend_alignment ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <AlertCircle className="w-5 h-5 text-amber-500" />}
-              Classifier-Forecast Alignment
-            </h3>
-            <div className="p-4 rounded-xl border-l-4"  style={{ borderColor: integration?.trend_alignment ? "#10b981" : "#f59e0b", backgroundColor: integration?.trend_alignment ? "#065f46" : "#92400e" }}>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-xs text-zinc-300 font-bold uppercase mb-1">Status</p>
-                  <p className="text-sm font-black" style={{ color: integration?.trend_alignment ? "#10b981" : "#f59e0b" }}>
-                    {integration?.trend_alignment ? "✓ Aligned" : "⚠ Divergent"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-zinc-300 font-bold uppercase mb-1">Alignment Score</p>
-                  <p className="text-sm font-black text-zinc-100">{(integration?.alignment_score * 100).toFixed(1)}%</p>
-                </div>
-                <div>
-                  <p className="text-xs text-zinc-300 font-bold uppercase mb-1">Recommendation</p>
-                  <p className="text-sm font-black text-zinc-100">{integration?.recommendation}</p>
-                </div>
-              </div>
-              <p className="text-xs text-zinc-200 mt-3">
-                {integration?.trend_alignment 
-                  ? "The classifier's current trend prediction aligns with the time series forecast, indicating consistent signal."
-                  : "The classifier prediction differs from the time series forecast. Review additional data sources."}
-              </p>
-            </div>
-          </div>
-
-          {/* Forecast Numbers */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-black text-zinc-200 flex items-center gap-2">
-              <Database className="w-5 h-5 text-blue-400" /> Population Forecast (2026-2031)
-            </h3>
-            <div className="grid grid-cols-3 gap-3">
-              {forecastData.years.map((year: number, idx: number) => (
-                <div key={year} className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-center">
-                  <p className="text-xs text-zinc-600 font-bold uppercase">{year}</p>
-                  <p className="text-sm font-black text-cyan-400 font-mono">{forecastData.populations[idx]?.toLocaleString() || "—"}</p>
-                </div>
-              ))}
-            </div>
+        <div className="mt-5 rounded-2xl p-4 bg-[#0b1b26] border border-[#31505d]">
+          <h4 className="text-lg text-[#e9fff8] inline-flex items-center gap-2">
+            <LineChartIcon className="w-5 h-5" />
+            Population trajectory and forecast
+          </h4>
+          <div className="h-80 mt-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="speciesTrajectory" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6faef8" stopOpacity={0.32} />
+                    <stop offset="95%" stopColor="#6faef8" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#35515c" />
+                <XAxis dataKey="year" stroke="#91ada6" />
+                <YAxis stroke="#91ada6" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#0d1f2b", border: "1px solid #33515d", borderRadius: 10 }}
+                  formatter={(value: any) => [Number(value).toLocaleString(), "population"]}
+                />
+                <Area type="monotone" dataKey="population" stroke="#6faef8" fill="url(#speciesTrajectory)" strokeWidth={2.5} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="bg-[#0a0a0b] border-t border-[#27272a] p-6 flex justify-end">
-          <button 
-            onClick={onClose}
-            className="px-6 py-2 rounded-lg bg-emerald-500 text-black font-black text-sm hover:bg-emerald-400 transition-colors"
-          >
-            Close
-          </button>
+        <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {(forecastData?.years || []).map((year: number, idx: number) => (
+            <div key={year} className="rounded-xl p-3 bg-[#0f2430] border border-[#31505b] text-center">
+              <p className="text-xs text-[#90aea6] uppercase tracking-[0.12em]">{year}</p>
+              <p className="text-[#defaf1] font-semibold mt-1">{Number(forecastData.populations[idx] || 0).toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 rounded-xl p-3 border border-[#355665] bg-[#112433] text-sm text-[#cce7df] inline-flex items-start gap-2">
+          {integration?.trend_alignment ? <CheckCircle2 className="w-4 h-4 mt-0.5" /> : <AlertCircle className="w-4 h-4 mt-0.5" />}
+          {integration?.recommendation || "Review model alignment status before policy-level interpretation."}
         </div>
       </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl p-3 bg-[#0f2430] border border-[#31505b]">
+      <p className="text-xs text-[#8ca9a2] uppercase tracking-widest">{label}</p>
+      <p className="text-[#e8fff7] font-semibold mt-1">{value}</p>
     </div>
   );
 }

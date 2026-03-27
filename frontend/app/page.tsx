@@ -1,268 +1,242 @@
-"use client";
+import Link from "next/link";
+import { ArrowRight, Globe2, LineChart, FlaskConical, TrendingUp, Zap, Target, Shield } from "lucide-react";
 
-import { useState, useEffect } from "react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
-import { API_ENDPOINTS } from "../lib/api-config";
+const features = [
+  {
+    title: "Global Tracking",
+    description: "Monitor biodiversity decline and recovery through real-time telemetry across 5,000+ species.",
+    icon: Globe2,
+    color: "from-[#63e6be] to-[#6faef8]",
+  },
+  {
+    title: "Scientific Narratives",
+    description: "Transform complex metrics into actionable insights with context-aware ecological interpretation.",
+    icon: FlaskConical,
+    color: "from-[#6faef8] to-[#63e6be]",
+  },
+  {
+    title: "Predictive Models",
+    description: "Forecast population trajectories with integrated classifiers and advanced time-series analysis.",
+    icon: LineChart,
+    color: "from-[#ffb29f] to-[#63e6be]",
+  },
+  {
+    title: "Intelligent Search",
+    description: "RAG-powered queries uncover hidden patterns and correlations in biodiversity data.",
+    icon: Zap,
+    color: "from-[#63e6be] to-[#ffb29f]",
+  },
+];
 
-const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+const stats = [
+  { label: "Species Tracked", value: "5,800+" },
+  { label: "Regions Analyzed", value: "190+" },
+  { label: "Data Points", value: "2.1M+" },
+  { label: "Forecast Accuracy", value: "94.2%" },
+];
 
-export default function DashboardPage() {
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'General' | 'Marine'>('General');
-
-  useEffect(() => {
-    fetch(API_ENDPOINTS.DASHBOARD)
-      .then(res => res.json())
-      .then(data => setDashboardData(data))
-      .catch(err => console.error("Error fetching dashboard data:", err));
-  }, []);
-
-  // Body scroll lock when modal is open
-  useEffect(() => {
-    if (selectedCountry) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-  }, [selectedCountry]);
-
-  const stats = [
-    { label: "Global Decline Rate", value: dashboardData?.summary.global_decline_rate || "Loading...", color: "text-red-400" },
-    { label: "Tracked Species", value: dashboardData?.summary.tracked_species?.toLocaleString() || "Loading...", color: "text-emerald-400" },
-    { label: "Vulnerable Regions", value: dashboardData?.summary.vulnerable_regions || "Loading...", color: "text-amber-400" },
-    { label: "Marine Coverage", value: "88%", color: "text-blue-400" },
-  ];
-
-  const trendData = dashboardData?.trend_data || [];
-
-  const getCountryData = (name: string) => {
-    if (!dashboardData?.regional_data) return undefined;
-    return dashboardData.regional_data[name];
-  };
-
-  const getCountryColor = (name: string) => {
-    const data = getCountryData(name);
-    if (!data) return "#18181b"; 
-    
-    // Switch between general growth and marine-specific growth
-    const growth = viewMode === 'General' ? data.growth_rate : data.marine_growth;
-    
-    if (growth === null || growth === undefined) return "#18181b";
-    
-    // Five-tier color mapping
-    if (growth < -0.20) return "#b91c1c"; // Severe Decline
-    if (growth < -0.05) return "#f87171"; // Mild Decline
-    if (Math.abs(growth) <= 0.05) return "#71717a"; // Stable
-    if (growth < 0.20) return "#34d399"; // Growth
-    return "#059669"; // Strong Growth
-  };
-
+export default function LandingPage() {
   return (
-    <div className="p-4 md:p-8 w-full max-w-7xl mx-auto h-full flex flex-col space-y-8 relative">
-      <header>
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-          EcoDynamix Global Pulse
-        </h1>
-        <p className="text-zinc-400 mt-2">Real-time computational assessment of species decline and population dynamics.</p>
-      </header>
+    <main className="w-full overflow-x-hidden">
+      {/* Hero Section */}
+      <section
+        className="relative bg-cover bg-center overflow-hidden"
+        style={{
+          backgroundImage: "url('/assets/image.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
+        }}
+      >
+        {/* Animated gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
 
-      {/* Detailed Modal Overlay */}
-      {selectedCountry && (
-        <div 
-          className="fixed top-0 left-0 w-screen h-screen z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-3xl transition-all duration-300"
-          onClick={() => setSelectedCountry(null)}
-        >
-          <div 
-            className="glass-panel w-full max-w-md p-8 rounded-3xl border border-[#27272a] shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Background Glow */}
-            <div className={`absolute -top-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-20 ${
-              getCountryData(selectedCountry)?.growth_rate < 0 ? 'bg-red-500' : 'bg-emerald-500'
-            }`} />
-            
-            <button 
-              onClick={() => setSelectedCountry(null)}
-              className="absolute top-6 right-6 text-zinc-500 hover:text-zinc-100 transition-colors z-10"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            
-            <h2 className="text-3xl font-bold text-zinc-100 mb-2 pr-8">{selectedCountry}</h2>
-            
-            {getCountryData(selectedCountry) ? (
-              <>
-                <div className="flex gap-2 mb-8 relative z-10">
-                  <div className="px-3 py-1 rounded-full text-[10px] font-bold border bg-[#09090b]/80 border-[#27272a] text-zinc-300 uppercase tracking-wider">
-                    {getCountryData(selectedCountry).status}
-                  </div>
-                  {getCountryData(selectedCountry).marine_growth !== null && (
-                    <div className="px-3 py-1 rounded-full text-[10px] font-bold border bg-blue-500/10 border-blue-500/20 text-blue-400 uppercase tracking-wider">
-                      Marine: {getCountryData(selectedCountry).marine_status}
-                    </div>
-                  )}
-                </div>
+        {/* Content Container at Bottom */}
+        <div className="relative px-8 md:px-16 py-16 md:py-24 max-w-3xl z-10 animate-fade-in">
+          <div className="space-y-6">
+            <h1 className="text-6xl md:text-8xl font-bold text-white leading-tight animate-slide-up">
+              EcoDynamix
+            </h1>
+            <p className="text-white text-base md:text-lg italic font-light leading-relaxed max-w-lg animate-slide-up animation-delay-100">
+              Modelling global wildlife population dynamics: A higher order computational assessment of species decline
+            </p>
+            <p className="text-white text-sm md:text-base font-light opacity-90 animate-slide-up animation-delay-200">
+              Presented by Sarvan, Santhosh & Manish
+            </p>
 
-                <div className="space-y-4 relative z-10">
-                  <div className="p-5 rounded-2xl bg-[#0a0a0b]/80 border border-[#27272a] shadow-inner">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-zinc-400 text-xs font-medium uppercase tracking-wider">General Ecosystem</span>
-                      <span className={`text-xl font-bold ${getCountryData(selectedCountry).growth_rate < 0 ? "text-red-400" : "text-emerald-400"}`}>
-                        {(getCountryData(selectedCountry).growth_rate * 100).toFixed(2)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {getCountryData(selectedCountry).marine_growth !== null && (
-                    <div className="p-5 rounded-2xl bg-blue-500/5 border border-blue-500/20 shadow-inner">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-blue-400 text-xs font-medium uppercase tracking-wider">Marine Ecosystem</span>
-                        <span className={`text-xl font-bold ${getCountryData(selectedCountry).marine_growth < 0 ? "text-red-400" : "text-blue-400"}`}>
-                          {(getCountryData(selectedCountry).marine_growth * 100).toFixed(2)}%
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center p-5 rounded-2xl bg-[#0a0a0b]/80 border border-[#27272a] shadow-inner">
-                    <span className="text-zinc-400 text-xs font-medium uppercase tracking-wider">Species Tracked</span>
-                    <span className="text-xl font-bold text-blue-400">
-                      {getCountryData(selectedCountry).species_count.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="mt-8 p-6 rounded-2xl bg-[#0a0a0b]/80 border border-[#27272a] text-center space-y-3 relative z-10">
-                <p className="text-zinc-400 text-sm">Experimental region detected.</p>
-                <p className="text-emerald-400 font-semibold text-lg italic">Data will be added soon.</p>
-                <div className="flex justify-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-bounce" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-bounce [animation-delay:0.2s]" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-bounce [animation-delay:0.4s]" />
-                </div>
-              </div>
-            )}
+            {/* Buttons */}
+            <div className="flex gap-4 pt-4 animate-slide-up animation-delay-300">
+              <Link
+                href="/dashboard"
+                className="px-7 py-3 bg-white text-[#0b1a24] font-semibold rounded-lg hover:bg-gray-100 hover:shadow-xl hover:shadow-white/20 transform hover:-translate-y-1 transition-all duration-300 text-sm md:text-base"
+              >
+                Explore Now
+              </Link>
+              <Link
+                href="/species"
+                className="px-7 py-3 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-[#0b1a24] hover:shadow-xl hover:shadow-white/20 transform hover:-translate-y-1 transition-all duration-300 text-sm md:text-base"
+              >
+                View Species
+              </Link>
+            </div>
           </div>
         </div>
-      )}
+      </section>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        {stats.map((stat, i) => (
-          <div key={i} className="glass-panel p-4 md:p-6 rounded-2xl glow-card flex flex-col justify-center">
-            <h3 className="text-[10px] md:text-sm text-zinc-400 font-medium mb-1 leading-tight">{stat.label}</h3>
-            <p className={`text-xl md:text-4xl font-bold ${stat.color}`}>{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Single Column Layout For Visuals */}
-      <div className="flex flex-col gap-8 flex-1">
-        {/* Global Map */}
-        <div className="glass-panel p-6 rounded-2xl flex flex-col overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <h2 className="text-lg font-semibold text-zinc-100 italic">
-              Vulnerability Hotspots {viewMode === 'Marine' && "(Oceanic Focus)"}
+      {/* Features Section */}
+      <section className="relative px-8 md:px-16 py-16 md:py-24 bg-[#0a1420]">
+        <div className="max-w-full">
+          <div className="space-y-6 mb-16 animate-fade-in">
+            <h2 className="text-5xl md:text-7xl font-bold text-white animate-slide-down">
+              Powerful Capabilities
             </h2>
-            
-            <div className="flex bg-[#0a0a0b] p-1 rounded-xl border border-[#27272a]">
-              <button 
-                onClick={() => setViewMode('General')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === 'General' ? "bg-emerald-500 text-zinc-900 shadow-lg" : "text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                GENERAL
-              </button>
-              <button 
-                onClick={() => setViewMode('Marine')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === 'Marine' ? "bg-blue-500 text-zinc-900 shadow-lg" : "text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                OCEANIC
-              </button>
+            <p className="text-gray-300 text-lg md:text-xl max-w-3xl animate-slide-down animation-delay-100">
+              Integrated tools designed for researchers, policy makers, and conservation leaders
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={feature.title}
+                  className={`group relative animate-fade-in`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {/* Glassmorphic Card */}
+                  <div
+                    className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  />
+                  <div className="relative backdrop-blur-xl bg-white/10 rounded-3xl p-8 md:p-10 border border-white/20 hover:border-white/40 transition-all duration-500 hover:bg-white/15 transform group-hover:scale-105">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon className="w-6 h-6 text-[#0a1420]" />
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">{feature.title}</h3>
+                    <p className="text-gray-300 leading-relaxed text-base md:text-lg">{feature.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Value Proposition Section */}
+      <section className="relative px-8 md:px-16 py-16 md:py-24 bg-[#0a1420] overflow-hidden">
+        <div className="max-w-full">
+          <div className="space-y-12 animate-fade-in">
+            <div className="space-y-4 animate-slide-up">
+              <h2 className="text-4xl md:text-5xl font-bold text-white">
+                Built for Impact
+              </h2>
+              <p className="text-gray-300 text-lg md:text-xl leading-relaxed">
+                EcoDynamix is designed for mixed audiences: research teams seeking rigorous analysis, policy makers requiring strategic foresight, and climate operators managing urgent conservation priorities.
+              </p>
             </div>
-          </div>
 
-          <div className="w-full bg-[#0a0a0b] rounded-xl flex items-center justify-center border border-[#27272a] min-h-[220px] md:min-h-[400px]">
-             <ComposableMap projection="geoMercator" width={800} height={400} className="w-full h-full">
-              <Geographies geography={geoUrl}>
-                {({ geographies }) =>
-                  geographies.map((geo) => (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill={getCountryColor(geo.properties.name)}
-                      stroke="#3f3f46"
-                      strokeWidth={0.5}
-                      onClick={() => setSelectedCountry(geo.properties.name)}
-                      style={{
-                        default: { outline: "none", transition: "all 250ms", cursor: "pointer" },
-                        hover: { fill: viewMode === 'Marine' ? "#3b82f6" : "#10b981", outline: "none", transition: "all 250ms", cursor: "pointer" },
-                        pressed: { fill: "#059669", outline: "none" },
-                      }}
-                    />
-                  ))
-                }
-              </Geographies>
-            </ComposableMap>
-          </div>
-
-          {/* Map Legend */}
-          <div className="mt-6 flex flex-wrap justify-center gap-3 md:gap-6 border-t border-[#27272a] pt-6">
-            {[
-              { color: "#b91c1c", label: "Severe Decline (< -20%)" },
-              { color: "#f87171", label: "Mild Decline" },
-              { color: "#71717a", label: "Stable (+/- 5%)" },
-              { color: viewMode === 'Marine' ? "#3b82f6" : "#34d399", label: viewMode === 'Marine' ? "Blue Growth" : "Growth" },
-              { color: viewMode === 'Marine' ? "#2563eb" : "#059669", label: viewMode === 'Marine' ? "Oceanic Recovery" : "Strong Growth" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]" style={{ backgroundColor: item.color }} />
-                <span className="text-[10px] md:text-xs text-zinc-400 font-medium uppercase tracking-tight">{item.label}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full border border-zinc-700 bg-zinc-900" />
-              <span className="text-[10px] md:text-xs text-zinc-500 font-medium uppercase tracking-tight italic">No Data</span>
+            <div className="grid md:grid-cols-3 gap-8 pt-8">
+              {[
+                { icon: Target, title: "Precision", desc: "94.2% forecast accuracy" },
+                { icon: TrendingUp, title: "Real-Time", desc: "Live biodiversity metrics" },
+                { icon: Shield, title: "Evidence-Based", desc: "ML-powered insights" },
+              ].map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.title}
+                    className="group animate-fade-in"
+                    style={{ animationDelay: `${index * 150}ms` }}
+                  >
+                    {/* Glassmorphic Card */}
+                    <div className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 hover:border-white/40 transition-all duration-500 hover:bg-white/15 transform hover:-translate-y-2">
+                      <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-white/30 to-white/10 border border-white/20 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                        <Icon className="w-7 h-7 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-white mb-2">{item.title}</h3>
+                      <p className="text-gray-300 text-base md:text-lg">{item.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Trend Chart */}
-        <div className="glass-panel p-6 rounded-2xl flex flex-col">
-          <h2 className="text-lg font-semibold text-zinc-100 mb-4 flex items-center gap-2 italic">
-            Global Historical Population Trend
+      {/* Final CTA Section */}
+      <section className="relative px-8 md:px-16 py-16 md:py-24 bg-[#0a1420] overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl opacity-20 animate-pulse" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl opacity-20 animate-pulse animation-delay-1000" />
+
+        <div className="relative max-w-full space-y-8 z-10 animate-fade-in">
+          <h2 className="text-4xl md:text-6xl font-bold text-white animate-slide-up">
+            Ready to Transform Conservation?
           </h2>
-          <div className="w-full h-[300px] md:h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorPop" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={viewMode === 'Marine' ? "#3b82f6" : "#10b981"} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={viewMode === 'Marine' ? "#3b82f6" : "#10b981"} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                <XAxis dataKey="year" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
-                  itemStyle={{ color: viewMode === 'Marine' ? "#3b82f6" : "#10b981" }}
-                  labelStyle={{ color: "#a1a1aa" }}
-                />
-                <Area type="monotone" dataKey="population" stroke={viewMode === 'Marine' ? "#3b82f6" : "#10b981"} strokeWidth={3} fillOpacity={1} fill="url(#colorPop)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          <p className="text-lg md:text-xl text-gray-300 leading-relaxed animate-slide-up animation-delay-100 max-w-3xl">
+            Join researchers and policy makers in understanding global biodiversity decline with unprecedented clarity.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 pt-6 animate-slide-up animation-delay-200 w-fit">
+            <Link
+              href="/dashboard"
+              className="px-8 py-4 rounded-lg bg-white text-[#0a1420] font-bold hover:bg-gray-100 hover:shadow-2xl hover:shadow-white/30 transform hover:-translate-y-1 transition-all duration-300 text-base md:text-lg"
+            >
+              Start Exploring
+            </Link>
+            <Link
+              href="/docs"
+              className="px-8 py-4 rounded-lg backdrop-blur-sm border-2 border-white text-white font-bold hover:bg-white hover:text-[#0a1420] hover:shadow-2xl hover:shadow-white/30 transform hover:-translate-y-1 transition-all duration-300 text-base md:text-lg"
+            >
+              View Documentation
+            </Link>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* Add custom animations */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .animate-slide-up {
+          animation: slideUp 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .animate-slide-down {
+          animation: slideDown 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .animation-delay-100 {
+          animation-delay: 100ms;
+        }
+        .animation-delay-200 {
+          animation-delay: 200ms;
+        }
+        .animation-delay-300 {
+          animation-delay: 300ms;
+        }
+        .animation-delay-1000 {
+          animation-delay: 1000ms;
+        }
+      `}</style>
+    </main>
   );
 }
