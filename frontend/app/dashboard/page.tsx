@@ -305,15 +305,15 @@ export default function DashboardPage() {
                     <TrendingDown className="w-5 h-5 text-[#ff6b6b] shrink-0" />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 mt-3 text-xs">
+                  <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
                     <div className="rounded-lg p-2 bg-[#15303f] border border-[#2d505b]">
                       <p className="text-[#7f9b95] uppercase tracking-wider">Decline Rate</p>
                       <p className="font-bold text-[#ff6b6b] mt-1">{(species.growthRate || 0).toFixed(2)}%</p>
                     </div>
-                    <div className="rounded-lg p-2 bg-[#15303f] border border-[#2d505b]">
+                    {/* <div className="rounded-lg p-2 bg-[#15303f] border border-[#2d505b]">
                       <p className="text-[#7f9b95] uppercase tracking-wider">Confidence</p>
-                      <p className="font-bold text-[#6faef8] mt-1">{((species.confidence || 0) * 100).toFixed(0)}%</p>
-                    </div>
+                      <p className="font-bold text-[#6faef8] mt-1">{((species.confidence || 0.9) * 100).toFixed(0)}%</p>
+                    </div> */}
                     <div className="rounded-lg p-2 bg-[#15303f] border border-[#2d505b]">
                       <p className="text-[#7f9b95] uppercase tracking-wider">Population</p>
                       <p className="font-bold text-[#c5e8de] mt-1">{(species.currentPopulation || 0).toLocaleString()}</p>

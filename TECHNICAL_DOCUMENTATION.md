@@ -13,6 +13,7 @@ The following implementation updates are now reflected in the active product bui
 3. **Navigation behavior update:** The dedicated “Landing” sidebar item was removed; clicking the EcoDynamix brand/logo returns to `/`.
 4. **Branding update:** Shared `logo.svg` is now used in primary brand placements.
 5. **Docs hub expansion:** `/docs` was refactored into a structured technical reference with architecture, pipeline, model, API, and operations sections suitable for mixed audiences.
+6. **ARIMA integration schema update:** Integrated forecast metrics now expose full-vs-fallback execution counts, and per-species forecast payloads now include ARIMA residual diagnostics plus year-level confidence intervals.
 
 ---
 
@@ -1622,40 +1623,65 @@ main = do
 ```json
 {
   "metrics": {
-    "engine_type": "Integrated Prediction Engine (Auto-ARIMA + SARIMA + Weighted Ensemble)",
-    "execution_date": "2026-03-26T23:42:40",
-    "species_evaluated": 15,
-    "species_successful": 15,
-    "success_rate": 1.0,
+    "engine_type": "Integrated Prediction Engine (Classifier + ARIMA TimeSeries + Fallback)",
+    "execution_date": "2026-03-28T09:57:05.885556",
+    "species_evaluated": 4962,
+    "species_successful": 4239,
+    "species_full_predictions": 2081,
+    "species_fallback_predictions": 2158,
+    "success_rate": 0.8543,
+    "forecast_coverage": "100% (full predictions + fallback)",
     "forecast_start_year": 2026,
     "forecast_end_year": 2031,
-    "trend_alignment_status": "Sample predictions coordinating classifier + time series"
+    "trend_alignment_status": "Sample of predictions coordinating classifier and time series"
   },
   "predictions": {
-    "Procapra_picticaudata": {
+    "Calidris_ruficollis": {
+      "species": "Calidris_ruficollis",
+      "display_name": "Calidris ruficollis",
+      "last_updated_year": 2020,
+      "current_population": 84071.0,
       "current_trend": {
         "trend": "Declining",
-        "confidence": 0.876,
-        "classifier_prediction": "Declining"
+        "trend_code": 0,
+        "confidence": 0.9887,
+        "color": "#ef4444"
+      },
+      "current_growth_rate": 7.21,
+      "time_series_model": {
+        "type": "ARIMA(2,1,1)",
+        "mae": 48575.0054,
+        "rmse": 51409.6637,
+        "residual_std": 47348.2877
+      },
+      "forecast": {
+        "years": [2026, 2027, 2028, 2029, 2030, 2031],
+        "populations": [86584.05, 86564.91, 86570.02, 86569.79, 86569.18, 86569.58],
+        "confidence_intervals": {
+          "2026": { "lower": 0.0, "upper": 179386.69 },
+          "2027": { "lower": 0.0, "upper": 179367.56 }
+        }
       },
       "forecast_trend": {
-        "forecast_trend": "Declining",
-        "forecast_years": [2026, 2027, 2028, 2029, 2030, 2031],
-        "forecast_populations": [450, 420, 390, 360, 330, 300],
-        "growth_rate_inference": -6.7
+        "forecast_growth_rate": -0.0,
+        "forecast_trend": "Stable",
+        "forecast_trend_code": 1,
+        "forecast_color": "#f59e0b",
+        "alignment_with_classifier": false,
+        "alignment_score": 0.0113
       },
-      "current_population": 500,
       "integration": {
-        "trend_alignment": true
+        "classifier_confidence": 0.9887,
+        "trend_alignment": false,
+        "alignment_score": 0.0113,
+        "recommendation": "REVIEW_FORECAST"
       },
       "historical_data": {
-        "years": [1990, 1991, ..., 2024],
-        "populations": [1200, 1150, ..., 510],
-        "growth_rates": [0, -4.2, ..., -2.9]
+        "years": [1966, 1967, 1968, "...", 2020],
+        "populations": [2590.0, 2460.0, 3105.0, "...", 84071.0],
+        "growth_rates": [-5.02, 26.22, 93.24, "...", -1.4]
       }
-    },
-    "Rhagomys_rufescens": { ... },
-    ...
+    }
   }
 }
 ```
@@ -1666,36 +1692,45 @@ main = do
 
 ```json
 {
-  "species": "Gadus_morhua",
+  "species": "Calidris_ruficollis",
   "prediction": {
+    "species": "Calidris_ruficollis",
+    "display_name": "Calidris ruficollis",
+    "last_updated_year": 2020,
+    "current_population": 84071.0,
     "current_trend": {
       "trend": "Declining",
-      "confidence": 0.815,
-      "classifier_prediction": "Declining"
+      "trend_code": 0,
+      "confidence": 0.9887,
+      "color": "#ef4444"
     },
-    "forecast_trend": {
-      "forecast_trend": "Declining",
-      "forecast_years": [2026, 2027, 2028, 2029, 2030, 2031],
-      "forecast_populations": [45250, 43180, 41325, 39670, 38195, 36885],
-      "growth_rate_inference": -4.5,
-      "forecast_confidence": {
-        "2026": 0.85,
-        "2027": 0.80,
-        "2028": 0.75,
-        "2029": 0.70,
-        "2030": 0.65,
-        "2031": 0.65
+    "time_series_model": {
+      "type": "ARIMA(2,1,1)",
+      "mae": 48575.0054,
+      "rmse": 51409.6637,
+      "residual_std": 47348.2877
+    },
+    "forecast": {
+      "years": [2026, 2027, 2028, 2029, 2030, 2031],
+      "populations": [86584.05, 86564.91, 86570.02, 86569.79, 86569.18, 86569.58],
+      "confidence_intervals": {
+        "2026": { "lower": 0.0, "upper": 179386.69 },
+        "2027": { "lower": 0.0, "upper": 179367.56 }
       }
     },
-    "current_population": 45600,
-    "integration": {
-      "trend_alignment": true,
-      "alignment_type": "both_declining"
+    "forecast_trend": {
+      "forecast_growth_rate": -0.0,
+      "forecast_trend": "Stable",
+      "forecast_trend_code": 1,
+      "forecast_color": "#f59e0b",
+      "alignment_with_classifier": false,
+      "alignment_score": 0.0113
     },
-    "ensemble_models": ["ARIMA_Optimized", "SARIMA_Optimized"],
-    "ensemble_weights": {
-      "ARIMA_Optimized": 0.55,
-      "SARIMA_Optimized": 0.45
+    "integration": {
+      "classifier_confidence": 0.9887,
+      "trend_alignment": false,
+      "alignment_score": 0.0113,
+      "recommendation": "REVIEW_FORECAST"
     }
   }
 }

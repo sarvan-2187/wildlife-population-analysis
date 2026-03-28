@@ -7,6 +7,15 @@
 
 Welcome to the technical documentation for the **EcoDynamix Intelligence Dashboard**. This system is a full-stack computational engine designed to analyze, visualize, and forecast global species population trends using historical data, machine learning, and RAG-powered AI.
 
+## Latest ARIMA Update (March 2026)
+
+- Forecast execution now uses an integrated flow: classifier trend inference + ARIMA(2,1,1) time-series projection + explicit fallback forecasts when full ARIMA output is unavailable.
+- Integrated metrics now expose `species_full_predictions`, `species_fallback_predictions`, and `forecast_coverage` for transparent coverage tracking.
+- Per-species predictions now include:
+- `time_series_model` diagnostics (`type`, `mae`, `rmse`, `residual_std`)
+- `forecast.confidence_intervals` for each forecast year (2026-2031)
+- Alignment-aware forecast metadata (`forecast_growth_rate`, `forecast_trend_code`, recommendation flags)
+
 ## System Architecture
 
 The project follows a split-tier architecture with a high-performance Python backend and a reactive Next.js frontend.
@@ -34,7 +43,7 @@ Located in `/frontend`, the dashboard provides a premium, interactive user exper
 ### 3. ML & Data Pipeline
 Located in `/backend/models` and `/data`.
 - **Classification**: A Random Forest model (`decline_classifier.py`) categorizes species health based on historical momentum.
-- **Forecasting**: An ARIMA(2,1,1) model (`time_series_model.py`) generates population projections for the 2026-2031 window.
+- **Forecasting**: The integrated prediction engine (`integrated_prediction_engine.py`) coordinates ARIMA(2,1,1) forecasts with classifier outputs and fallback generation for full forecast coverage.
 - **Normalization**: A dedicated pipeline ensures all growth rates are clipped to a realistic [-99%, +100%] range for data integrity.
 
 ## Key Features

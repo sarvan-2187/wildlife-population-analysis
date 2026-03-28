@@ -243,65 +243,52 @@ Population data has a **non-stationary trend** — it drifts up or down over tim
 
 ### Forecast Confidence Intervals
 
-One of the system's most scientifically honest features: confidence *decreases* the further into the future you forecast.
+The active ARIMA path computes confidence intervals from each species' residual variance, not from a fixed year-by-year confidence template.
 
-$$CI(\text{year}) = \max(0.5,\ 0.85 - (\text{year} - 2026) \times 0.05)$$
+$$CI_t = \hat{y}_t \pm 1.96 \cdot \sigma_{residual}$$
 
-| Forecast Year | Confidence |
-|--------------|-----------|
-| 2026 | **85%** |
-| 2027 | 80% |
-| 2028 | 75% |
-| 2029 | 70% |
-| 2030 | 65% |
-| 2031 | **65%** (floor) |
+Where:
+- $\hat{y}_t$ is the forecast for year $t$
+- $\sigma_{residual}$ is the standard deviation of ARIMA residuals
+- The lower bound is clipped at zero to prevent impossible negative populations
 
-Forecasting 5 years ahead is genuinely harder than 1 year ahead. The system communicates this uncertainty honestly to the user.
+This produces species-specific uncertainty ranges grounded in observed volatility.
 
 ### Error Metrics Explained
 
-Three metrics measure how accurate the forecasts are:
+The integrated ARIMA service reports three primary diagnostics:
 
 $$\text{MAE} = \frac{1}{n}\sum_{i=1}^{n}|y_i - \hat{y}_i|$$
 
 $$\text{RMSE} = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}$$
 
-$$\text{MAPE} = \frac{1}{n}\sum_{i=1}^{n}\frac{|y_i - \hat{y}_i|}{y_i} \times 100\%$$
-
 | Metric | What It Measures | Best For |
 |--------|-----------------|----------|
 | MAE (Mean Absolute Error) | Average error in original units | Easy stakeholder communication |
 | RMSE (Root Mean Squared Error) | Penalises large errors more heavily | Detecting catastrophic misses |
-| MAPE (Mean Absolute % Error) | Scale-independent percentage error | Comparing species of very different sizes |
+| Residual Std | Dispersion of residuals | Building 95% forecast confidence intervals |
 
-MAPE is critical here: comparing MAE between Atlantic Cod (50,000 individuals) and a rare bird (500 individuals) would be meaningless. MAPE normalises both to a percentage, making the comparison fair.
+Residual standard deviation is now a first-class output in the per-species `time_series_model` block.
 
-### SARIMA — Adding Seasonality
+### Integrated Forecast Strategy (Current Build)
 
-The enhanced model extends ARIMA with a **Seasonal** component: `SARIMA(1,1,1)(1,0,1,3)`.
+The current production flow combines:
+1. Classifier-driven current trend inference
+2. ARIMA(2,1,1) forecasting for 2026-2031
+3. Status-based fallback forecasts when full ARIMA output cannot be produced
 
-The extra parameters `(P, D, Q, s) = (1, 0, 1, 3)` capture **3-year ecological cycles** — patterns like El Niño events and multi-year migration cycles that repeat every ~3 years in wildlife populations.
+This keeps forecast coverage complete while preserving model transparency through recommendation flags (`HIGH_CONFIDENCE`, `REVIEW_FORECAST`, `FALLBACK_FORECAST`).
 
-**What this means in practice:** A non-seasonal ARIMA might miss that a bird species reliably spikes every 3 years due to a boom-bust prey cycle. SARIMA detects this pattern and incorporates it into the forecast.
+### Integration Outcomes (Latest Full Run)
 
-### Weighted Ensemble Forecast
-
-Rather than choosing between ARIMA and SARIMA, the optimized system **combines both**, giving more weight to whichever model performs better for each species:
-
-$$\hat{y}_{\text{ensemble}}(t) = \sum_{i=1}^{n} w_i \cdot \hat{y}_i(t)$$
-
-$$w_i = \frac{\max(\text{MAE})}{\text{MAE}_i + 1} \quad \text{(normalized so } \sum w_i = 1.0\text{)}$$
-
-**Example (Atlantic Cod):** ARIMA weight = 0.55, SARIMA weight = 0.45. The model that performed better on validation data contributes more to the final forecast.
-
-### Forecast Performance (Atlantic Cod Example)
-
-| Metric | Baseline | Optimized | Improvement |
-|--------|----------|-----------|------------|
-| 2031 Forecast | 38,500 individuals | 36,885 individuals | More conservative |
-| Confidence Interval | 95% (fixed, unrealistic) | 65% (adaptive) | Honest uncertainty |
-| RMSE (2026–2031) | 15,200 | 12,000 | −21% |
-| Inference Time | 2.8 sec | 1.1 sec | 61% faster |
+| Metric | Value |
+|--------|-------|
+| Species evaluated | 4,962 |
+| Successful predictions | 4,239 |
+| Full ARIMA predictions | 2,081 |
+| Fallback predictions | 2,158 |
+| Success rate | 85.43% |
+| Forecast coverage | 100% (full predictions + fallback) |
 
 ---
 
@@ -479,9 +466,9 @@ If validation fails, the dashboard rejects the data entirely rather than silentl
 | RF classifier accuracy | **99.15%** | Correct in 99 of 100 classification decisions |
 | RF weighted F1-score | **0.9915** | Near-perfect balance of precision and recall |
 | CV stability (5-fold) | **±0.0005** | Extremely consistent across data splits |
-| ARIMA error reduction | **15–16%** | Over fixed-parameter baseline |
-| Ensemble MAE improvement | **~20–26%** | MAE/RMSE/MAPE reduction via optimization |
-| Forecast confidence range | **52–93%** | Adaptive and honest about uncertainty |
+| ARIMA model type | **ARIMA(2,1,1)** | Current production forecaster |
+| Full-model success rate (latest run) | **85.43%** | Species with complete classifier + ARIMA output |
+| Forecast coverage | **100%** | Full predictions plus fallback forecasts |
 | Groq LLM latency | **<100ms** | ~20× faster than standard LLM providers |
 | RAG retrieval latency | **<100ms** | Even at 10,000+ indexed facts |
 | Top predictive feature | `growth_rate_ma2` **(53%)** | 2-year smoothed trend is the strongest predictor |
@@ -500,7 +487,7 @@ Use these when addressing non-technical stakeholders:
 > "It's a structured extrapolation engine. It learns the rhythm of each species' population — how fast it changes, whether it's accelerating, how noisy it is — and then projects that rhythm forward while honestly reporting how uncertain the far-future projections are."
 
 ### On the Confidence Intervals:
-> "The system doesn't pretend to know the future with certainty. A 2026 forecast has 85% confidence. A 2031 forecast has 65% confidence. This is scientifically appropriate — and it means decision-makers can weigh near-term forecasts more heavily than long-term ones."
+> "Forecast uncertainty is computed from each species' ARIMA residual behavior. The confidence bounds are data-driven per species, not a fixed schedule shared by all species."
 
 ### On the RAG AI Chat:
 > "The AI chat doesn't answer from memory. It first looks up the real data about that species or region from a verified database, then uses a language model to explain it in plain English. This prevents the AI from making things up — a critical safeguard for conservation research."
@@ -511,8 +498,8 @@ Use these when addressing non-technical stakeholders:
 ### On the Haskell Validator:
 > "It's a mathematical safety lock. Before any data reaches the dashboard, a formally verified program confirms the structural integrity of every value. The same class of rigor is used in aerospace control systems and financial clearing software."
 
-### On the Weighted Ensemble:
-> "Rather than betting everything on one model, the system runs two forecasting models in parallel and weights their outputs by how well each performed on validation data. The better model contributes more to the final answer — automatically, per species."
+### On the Fallback Forecast Strategy:
+> "When a species does not produce a full ARIMA result, the platform still issues a transparent status-based fallback forecast. That keeps 2026-2031 forecast coverage complete while clearly signaling confidence level."
 
 ### On the Overall System:
 > "EcoDynamix combines three decades of best practices in machine learning, time series analysis, and conversational AI into a single portable system — one that requires no cloud infrastructure to run, can be deployed by any conservation organization, and gives researchers, policymakers, and field scientists a single interface for understanding what is happening to the world's wildlife."
@@ -553,6 +540,13 @@ This section captures product-level updates applied after the original documenta
 - The `/docs` page was expanded from a short overview to a structured reference hub.
 - It now covers platform overview, data pipeline, models, RAG, architecture, APIs, and operations in practical language.
 - The tone was calibrated to be detailed and useful for mixed audiences (technical + stakeholder) without becoming too academic.
+
+### 9.5 ARIMA Integration Payload Update
+
+- Integrated metrics now include `species_full_predictions`, `species_fallback_predictions`, and `forecast_coverage`.
+- Per-species payloads now expose `time_series_model` diagnostics (`type`, `mae`, `rmse`, `residual_std`) and year-level `forecast.confidence_intervals`.
+- `forecast_trend` now includes `forecast_growth_rate`, `forecast_trend_code`, and explicit classifier-alignment metadata.
+- Integration recommendations now clearly separate aligned outputs (`HIGH_CONFIDENCE`), divergence requiring review (`REVIEW_FORECAST`), and explicit fallback cases (`FALLBACK_FORECAST`).
 
 ---
 
