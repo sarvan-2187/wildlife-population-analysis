@@ -3,14 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, MessageSquare, BrainCircuit, Table, BookOpen, Home, Globe2 } from "lucide-react";
+import { LayoutDashboard, MessageSquare, BrainCircuit, Table, BookOpen, Globe2 } from "lucide-react";
 import logo from "../assets/logo.svg";
 
 export function Sidebar() {
   const pathname = usePathname();
 
   const links = [
-    { href: "/", label: "Landing", icon: Home },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/regions", label: "Regions", icon: Globe2 },
     { href: "/species", label: "Species", icon: Table },
@@ -21,17 +20,17 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex w-72 h-screen border-r border-[#2d4b52] glass-panel flex-col fixed left-0 top-0 z-20">
-      <div className="h-20 flex items-center px-6 border-b border-[#2d4b52] gap-3">
+      <Link href="/" className="h-20 flex items-center px-6 border-b border-[#2d4b52] gap-3 hover:bg-[#102836]/35 transition-colors">
         <div className="w-10 h-10 rounded-xl bg-[#0c1f2a] border border-[#2f5058] shadow-lg shadow-cyan-500/20 flex items-center justify-center overflow-hidden p-1.5">
           <Image src={logo} alt="EcoDynamix logo" className="w-full h-full object-contain" priority />
         </div>
         <div>
-          <h1 className="text-xl font-bold bg-linear-to-r from-[#e8fff6] to-[#7fd5c2] bg-clip-text text-transparent leading-none">
+          <h1 className="text-xl font-extrabold bg-linear-to-r from-[#e8fff6] to-[#7fd5c2] bg-clip-text text-transparent leading-none">
             EcoDynamix
           </h1>
-          <p className="text-[10px] text-[#95b9b0] uppercase tracking-[0.16em] mt-1">Biodiversity Intelligence</p>
+          {/* <p className="text-[10px] text-[#95b9b0] uppercase tracking-[0.16em] mt-1">Biodiversity Intelligence</p> */}
         </div>
-      </div>
+      </Link>
 
       {/* <div className="px-4 pt-4">
         <div className="glass-chip rounded-xl px-3 py-2 text-[10px] text-[#b6cfc7] uppercase tracking-[0.18em]">
