@@ -13,6 +13,7 @@
 6. [System Architecture](#6-system-architecture)
 7. [Key Metrics — Stakeholder Summary](#7-key-metrics--stakeholder-summary)
 8. [Presentation-Ready Plain-English Framings](#8-presentation-ready-plain-english-framings)
+9. [Latest Product Updates (March 2026)](#9-latest-product-updates-march-2026)
 
 ---
 
@@ -518,5 +519,42 @@ Use these when addressing non-technical stakeholders:
 
 ---
 
-*Document prepared from: EcoDynamix Technical Documentation v1.0 (March 22, 2026)*
+## 9. Latest Product Updates (March 2026)
+
+This section captures product-level updates applied after the original documentation baseline, so stakeholder-facing explanations stay aligned with the live dashboard behavior.
+
+### 9.1 Dashboard and Species Metric Alignment
+
+- The growth-rate mismatch between the dashboard endangered cards and the species table has been resolved.
+- Both views now use the same species-level growth baseline from dashboard species data.
+- Integrated prediction outputs still enrich trend confidence, but they do not override canonical displayed growth values.
+
+### 9.2 Regions Experience Redesign
+
+- Regions now shows one continent card at a time (instead of multi-card overload).
+- Users can switch continents with previous/next controls.
+- Each continent includes six key analytics blocks:
+        1. Species tracked count
+        2. General average growth
+        3. Marine average growth
+        4. Country-level growth list
+        5. All-country growth line chart
+        6. Best-growing and worst-growing country
+- The previous Top 5/10/15 filter was intentionally removed to keep the full regional picture visible.
+
+### 9.3 Navigation and Branding Behavior
+
+- The sidebar no longer has a separate Landing menu item.
+- Clicking the EcoDynamix logo/brand now takes users directly to the landing page.
+- The shared `logo.svg` asset is now used as the UI brand mark.
+
+### 9.4 Documentation Hub Upgrade
+
+- The `/docs` page was expanded from a short overview to a structured reference hub.
+- It now covers platform overview, data pipeline, models, RAG, architecture, APIs, and operations in practical language.
+- The tone was calibrated to be detailed and useful for mixed audiences (technical + stakeholder) without becoming too academic.
+
+---
+
+*Document prepared from: EcoDynamix Technical Documentation v1.1 (March 28, 2026)*
 *Explanation authored for stakeholder presentation — beginner-accessible with full mathematical grounding*

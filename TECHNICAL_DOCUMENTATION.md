@@ -4,6 +4,16 @@
 
 This document provides a comprehensive technical overview of the **EcoDynamix Intelligence Dashboard** — a full-stack computational system designed to analyze, forecast, and visualize global species population dynamics.
 
+### 0.1 Latest Product Updates (March 28, 2026)
+
+The following implementation updates are now reflected in the active product build:
+
+1. **Growth metric consistency fix (Dashboard vs Species):** Endangered species growth values on `/dashboard` are now sourced from the same `species_data` growth baseline used by `/species`, with integrated predictions used as enrichment/fallback only.
+2. **Regions redesign:** `/regions` now presents one active continent card at a time with previous/next controls, full country growth listing, all-country growth line plot, and best/worst country indicators.
+3. **Navigation behavior update:** The dedicated “Landing” sidebar item was removed; clicking the EcoDynamix brand/logo returns to `/`.
+4. **Branding update:** Shared `logo.svg` is now used in primary brand placements.
+5. **Docs hub expansion:** `/docs` was refactored into a structured technical reference with architecture, pipeline, model, API, and operations sections suitable for mixed audiences.
+
 ---
 
 ## 1. Technology Stack
@@ -1023,16 +1033,22 @@ except Exception as e:
 frontend/
 ├── app/                          # Next.js app router directory
 │   ├── layout.tsx               # Root layout (header, nav, styles)
-│   ├── page.tsx                 # Dashboard home page
+│   ├── page.tsx                 # Landing page
 │   ├── globals.css              # Global Tailwind CSS imports
+│   ├── dashboard/
+│   │   └── page.tsx             # Analytics dashboard overview
 │   ├── chat/
 │   │   └── page.tsx             # RAG-powered chat interface
 │   ├── models/
 │   │   └── page.tsx             # ML model metrics visualization
+│   ├── regions/
+│   │   └── page.tsx             # Continent-level regional analytics
 │   ├── species/
 │   │   └── page.tsx             # Species inventory & filtering
+│   ├── landing/
+│   │   └── ...                  # Landing assets/sections
 │   └── docs/
-│       └── page.tsx             # Documentation page
+│       └── page.tsx             # Structured technical reference hub
 ├── components/
 │   ├── Sidebar.tsx              # Navigation sidebar component
 │   ├── MobileNav.tsx            # Mobile navigation drawer
@@ -1042,9 +1058,11 @@ frontend/
 
 ### 5.3 Core Pages & Features
 
-#### 5.3.1 Dashboard Page (/)
+#### 5.3.1 Dashboard Page (/dashboard)
 
 **Purpose:** Real-time overview of global wildlife population status
+
+**Routing Note:** `/` is now a dedicated landing entry, while analytical operations begin at `/dashboard`.
 
 **Key Sections:**
 
@@ -1094,19 +1112,25 @@ useEffect(() => {
 ```typescript
 const getCountryColor = (name: string) => {
   const data = getCountryData(name);
-  if (!data) return "#18181b";
+  if (!data) return "#0d1921";
   
   const growth = viewMode === 'General' 
     ? data.growth_rate 
     : data.marine_growth;
   
-  if (growth < -0.20) return "#b91c1c";      // Severe Decline
-  if (growth < -0.05) return "#f87171";      // Mild Decline
-  if (Math.abs(growth) <= 0.05) return "#71717a";  // Stable
-  if (growth < 0.20) return "#34d399";       // Growth
-  return "#059669";                          // Strong Growth
+  if (growth < -0.20) return "#ef5350";      // Severe Decline
+  if (growth < -0.05) return "#ff8f70";      // Mild Decline
+  if (Math.abs(growth) <= 0.05) return "#93a7ac";  // Stable
+  if (growth < 0.20) return "#71d6bf";       // Growth
+  return "#34b899";                          // Strong Growth
 };
 ```
+
+##### Cross-Page Growth Consistency (Latest)
+
+- Endangered species cards on `/dashboard` now use the same growth source as the `/species` table to prevent metric mismatches.
+- Normalized species-key indexing aligns integrated prediction records with dashboard species rows.
+- Integrated predictions continue to provide confidence/trend enrichment without overriding canonical growth values.
 
 ##### Population Trend Chart
 
@@ -1359,6 +1383,41 @@ const handleSend = async () => {
 - `isTyping` state disables send button
 - Spinner animates while awaiting response
 - Button shows `<Loader2 className="animate-spin" />`
+
+#### 5.3.5 Regions Analytics Page (/regions)
+
+**Purpose:** Continent-segmented analysis to resolve geographic aggregation gaps and improve interpretability.
+
+**Current Interaction Pattern:**
+- Single active continent card is displayed at a time.
+- Previous/next controls cycle through all mapped continents.
+- Full country list is shown (top-N filter removed).
+
+**Per-Continent Analytics Blocks:**
+1. Species tracked count
+2. General average growth
+3. Marine average growth
+4. Country list with growth rates
+5. Line plot for all country growth values
+6. Best-growing and worst-growing country highlights
+
+#### 5.3.6 Documentation Hub (/docs)
+
+**Purpose:** Provide a practical, stakeholder-friendly technical reference without overloading users with implementation internals.
+
+**Latest Content Structure:**
+- Platform overview and coverage snapshot
+- Dataset and preprocessing summary
+- Classifier and forecasting interpretation
+- RAG retrieval/generation architecture
+- API surface and integration boundaries
+- Operations/deployment guidance
+
+#### 5.3.7 Navigation and Branding Updates
+
+- Sidebar no longer includes a standalone “Landing” item.
+- EcoDynamix brand block/logo in sidebar now links to `/` for direct return to landing.
+- Shared `logo.svg` asset is used as primary brand mark.
 
 ### 5.4 Styling & Design System
 
