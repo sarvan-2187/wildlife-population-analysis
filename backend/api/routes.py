@@ -3,7 +3,7 @@ import asyncio
 import json
 import os
 from services.data_cleaning import get_data_summary
-from services.rag_service import get_rag_response
+from services.rag_service import get_rag_response, get_species_common_name
 
 router = APIRouter()
 
@@ -77,6 +77,16 @@ async def get_species_prediction(species_name: str):
     return {
         "species": species_underscore,
         "prediction": all_predictions["predictions"][species_underscore]
+    }
+
+
+@router.get("/species/{species_name}/common-name", tags=["RAG"])
+async def resolve_species_common_name(species_name: str):
+    species_underscore = species_name.replace("-", "_")
+    common_name = get_species_common_name(species_underscore)
+    return {
+        "species": species_underscore,
+        "common_name": common_name,
     }
 
 @router.post("/chat", tags=["RAG"])

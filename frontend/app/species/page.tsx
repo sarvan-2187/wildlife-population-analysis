@@ -3,10 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AlertCircle,
   ArrowUpDown,
   Bird,
-  CheckCircle2,
   Database,
   Globe,
   LineChart as LineChartIcon,
@@ -21,12 +19,14 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { API_ENDPOINTS } from "../../lib/api-config";
+import { API_ENDPOINTS, getSpeciesCommonNameUrl } from "../../lib/api-config";
 
 type SortDirection = "asc" | "desc";
 
@@ -85,6 +85,24 @@ export default function SpeciesPage() {
   );
 
   const uniqueStatuses = ["All Status", "Declining", "Stable", "Growing"];
+
+  const normalizeSpeciesKey = (value: string) =>
+    (value || "")
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/-+/g, "_")
+      .toLowerCase();
+
+  const predictionIndex = useMemo(() => {
+    const raw = integratedPredictions?.predictions || {};
+    const index: Record<string, any> = {};
+
+    Object.entries(raw).forEach(([key, value]) => {
+      index[normalizeSpeciesKey(key)] = value;
+    });
+
+    return index;
+  }, [integratedPredictions]);
 
   const filteredSpecies = useMemo(
     () =>
@@ -148,8 +166,8 @@ export default function SpeciesPage() {
   };
 
   const getPredictionForSpecies = (binomial: string) => {
-    if (!integratedPredictions?.predictions) return null;
-    return integratedPredictions.predictions[binomial] || null;
+    if (!predictionIndex) return null;
+    return predictionIndex[normalizeSpeciesKey(binomial)] || null;
   };
 
   const openSpeciesDetail = (speciesData: any) => {
@@ -178,7 +196,7 @@ export default function SpeciesPage() {
           <div>
             <h1 className="text-3xl md:text-5xl text-[#e9fff8] font-bold">Global Species Inventory and Forecasts</h1>
             <p className="mt-3 text-[#9ebcb4] max-w-3xl">
-              Filter telemetry across systems and regions, then inspect model-assisted trajectory and trend alignment for each species.
+              Filter telemetry across systems and regions, then inspect model-assisted trajectory and forecast patterns for each species.
             </p>
           </div>
           <div className="glass-chip rounded-2xl px-4 py-3 text-xs uppercase tracking-[0.14em] text-[#bde6db] inline-flex items-center gap-2">
@@ -275,7 +293,12 @@ export default function SpeciesPage() {
               {paginatedSpecies.map((item, idx) => {
                 const prediction = getPredictionForSpecies(item.binomial);
                 const forecastTrend = prediction?.forecast_trend?.forecast_trend || null;
-                const alignment = prediction?.integration?.trend_alignment;
+                const forecastColor =
+                  forecastTrend === "Declining"
+                    ? "text-[#ffb29f]"
+                    : forecastTrend === "Growing"
+                      ? "text-[#8ff0d1]"
+                      : "text-[#b6d7ff]";
 
                 return (
                   <tr
@@ -305,7 +328,7 @@ export default function SpeciesPage() {
                     </td>
                     <td className="px-5 py-4 text-sm">
                       {forecastTrend ? (
-                        <span className={alignment ? "text-[#8ff0d1]" : "text-[#ffcc8e]"}>{forecastTrend}</span>
+                        <span className={forecastColor}>{forecastTrend}</span>
                       ) : (
                         <span className="text-[#7f9a93]">No forecast</span>
                       )}
@@ -363,17 +386,64 @@ export default function SpeciesPage() {
 
 function SpeciesDetailModal({ species, onClose }: { species: any; onClose: () => void }) {
   const prediction = species.prediction;
+  const normalizeScientificName = (value: string) =>
+    value
+      .replace(/_/g, " ")
+      .trim()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const defaultDisplayName =
+    (species?.name && species.name.trim()) ||
+    (species?.binomial && normalizeScientificName(species.binomial)) ||
+    "Unknown Species";
+
+  const [commonName, setCommonName] = useState<string>(defaultDisplayName);
+  const [resolvingCommonName, setResolvingCommonName] = useState(false);
+
+  useEffect(() => {
+    let isActive = true;
+    const speciesBinomial = species?.binomial || species?.name;
+
+    if (!speciesBinomial) return;
+
+    setCommonName(defaultDisplayName);
+    setResolvingCommonName(true);
+
+    fetch(getSpeciesCommonNameUrl(encodeURIComponent(speciesBinomial.replace(/\s+/g, "_"))))
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isActive) return;
+        const resolved = data?.common_name?.trim?.();
+        if (resolved && resolved.toLowerCase() !== "unknown") {
+          setCommonName(resolved);
+        } else {
+          setCommonName(defaultDisplayName);
+        }
+      })
+      .catch(() => {
+        // Keep dashboard-provided name as fallback.
+        if (isActive) setCommonName(defaultDisplayName);
+      })
+      .finally(() => {
+        if (isActive) setResolvingCommonName(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [species?.binomial, species?.name, defaultDisplayName]);
 
   if (!prediction) {
     return (
       <div className="fixed inset-0 z-9999 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
         <div className="glass-panel rounded-3xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-between items-center">
-            <h3 className="text-xl text-[#e8fff7] font-semibold">{species.name}</h3>
+            <h3 className="text-xl text-[#e8fff7] font-semibold">{commonName}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-lg bg-[#122632] border border-[#385663] text-[#b7d6cd]">
               <X className="w-4 h-4 mx-auto" />
             </button>
           </div>
+          {resolvingCommonName && <p className="mt-2 text-xs text-[#8fb0a7]">Resolving general name...</p>}
           <p className="mt-4 text-[#9cbab2]">No integrated forecast currently available for this species.</p>
         </div>
       </div>
@@ -382,21 +452,63 @@ function SpeciesDetailModal({ species, onClose }: { species: any; onClose: () =>
 
   const currentTrend = prediction.current_trend;
   const forecastTrend = prediction.forecast_trend;
-  const integration = prediction.integration;
   const historicalData = prediction.historical_data;
   const forecastData = prediction.forecast;
 
+  const historicalYears = historicalData?.years || [];
+  const historicalPops = historicalData?.populations || [];
+  const historicalGrowthRates = historicalData?.growth_rates || [];
+  const forecastYears = forecastData?.years || forecastTrend?.forecast_years || [];
+  const forecastPops = forecastData?.populations || forecastTrend?.forecast_populations || [];
+
+  const classifyGrowth = (growth: number) => {
+    if (growth <= -2) return "Declining";
+    if (growth >= 2) return "Growing";
+    return "Stable";
+  };
+
+  const trendScore = (label: string) => {
+    if (label === "Declining") return -1;
+    if (label === "Growing") return 1;
+    return 0;
+  };
+
   const chartData = [
-    ...(historicalData?.years || []).map((year: number, idx: number) => ({
+    ...historicalYears.map((year: number, idx: number) => ({
       year,
-      population: historicalData.populations[idx],
+      population: historicalPops[idx],
       phase: "historical",
     })),
-    ...(forecastData?.years || []).map((year: number, idx: number) => ({
+    ...forecastYears.map((year: number, idx: number) => ({
       year,
-      population: forecastData.populations[idx],
+      population: forecastPops[idx],
       phase: "forecast",
     })),
+  ];
+
+  const trendData = [
+    ...historicalGrowthRates.map((growth: number, idx: number) => {
+      const year = historicalYears[idx + 1] ?? historicalYears[idx] ?? `H-${idx + 1}`;
+      const label = classifyGrowth(growth);
+      return {
+        year,
+        growth,
+        trendLabel: label,
+        trendScore: trendScore(label),
+        phase: "historical",
+      };
+    }),
+    ...forecastYears.map((year: number) => {
+      const growth = Number(forecastTrend?.growth_rate_inference ?? 0);
+      const label = forecastTrend?.forecast_trend || classifyGrowth(growth);
+      return {
+        year,
+        growth,
+        trendLabel: label,
+        trendScore: trendScore(label),
+        phase: "forecast",
+      };
+    }),
   ];
 
   return (
@@ -405,8 +517,11 @@ function SpeciesDetailModal({ species, onClose }: { species: any; onClose: () =>
         <div className="flex justify-between items-start gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.14em] text-[#89aca2]">Species profile</p>
-            <h3 className="text-2xl text-[#e8fff7] font-semibold mt-1">{species.name}</h3>
-            <p className="text-[#98b5ad] text-sm mt-1">{species.binomial}</p>
+            <h3 className="text-2xl text-[#e8fff7] font-semibold mt-1">{commonName}</h3>
+            {resolvingCommonName && <p className="text-[#98b5ad] text-xs mt-1">Resolving general name...</p>}
+            <p className="text-[#98b5ad] text-sm mt-1">
+              Current: {currentTrend?.trend || "-"} | Forecast: {forecastTrend?.forecast_trend || "-"}
+            </p>
           </div>
           <button onClick={onClose} className="w-9 h-9 rounded-lg bg-[#122632] border border-[#385663] text-[#b7d6cd]">
             <X className="w-4 h-4 mx-auto" />
@@ -417,7 +532,7 @@ function SpeciesDetailModal({ species, onClose }: { species: any; onClose: () =>
           <StatCard label="Current trend" value={currentTrend?.trend || "-"} />
           <StatCard label="Confidence" value={`${((currentTrend?.confidence || 0) * 100).toFixed(1)}%`} />
           <StatCard label="Forecast trend" value={forecastTrend?.forecast_trend || "-"} />
-          <StatCard label="Alignment" value={`${((integration?.alignment_score || 0) * 100).toFixed(1)}%`} />
+          <StatCard label="Forecast horizon" value={`${forecastYears.length} years`} />
         </div>
 
         <div className="mt-5 rounded-2xl p-4 bg-[#0b1b26] border border-[#31505d]">
@@ -447,19 +562,49 @@ function SpeciesDetailModal({ species, onClose }: { species: any; onClose: () =>
           </div>
         </div>
 
+        <div className="mt-5 rounded-2xl p-4 bg-[#0b1b26] border border-[#31505d]">
+          <h4 className="text-lg text-[#e9fff8] inline-flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Trend signal (Declining / Stable / Growing)
+          </h4>
+          <p className="mt-1 text-sm text-[#9ab7af]">
+            Derived from historical year-over-year growth and integrated forecast inference.
+          </p>
+          <div className="h-64 mt-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#35515c" />
+                <XAxis dataKey="year" stroke="#91ada6" />
+                <YAxis
+                  stroke="#91ada6"
+                  domain={[-1, 1]}
+                  ticks={[-1, 0, 1]}
+                  tickFormatter={(value: number) => {
+                    if (value === -1) return "Declining";
+                    if (value === 0) return "Stable";
+                    return "Growing";
+                  }}
+                />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#0d1f2b", border: "1px solid #33515d", borderRadius: 10 }}
+                  formatter={(_value: any, _name: any, item: any) => [item?.payload?.trendLabel || "-", "trend"]}
+                  labelFormatter={(label: any) => `Year ${label}`}
+                />
+                <Line type="monotone" dataKey="trendScore" stroke="#63e6be" strokeWidth={2.5} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {(forecastData?.years || []).map((year: number, idx: number) => (
+          {forecastYears.map((year: number, idx: number) => (
             <div key={year} className="rounded-xl p-3 bg-[#0f2430] border border-[#31505b] text-center">
               <p className="text-xs text-[#90aea6] uppercase tracking-[0.12em]">{year}</p>
-              <p className="text-[#defaf1] font-semibold mt-1">{Number(forecastData.populations[idx] || 0).toLocaleString()}</p>
+              <p className="text-[#defaf1] font-semibold mt-1">{Number(forecastPops[idx] || 0).toLocaleString()}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-5 rounded-xl p-3 border border-[#355665] bg-[#112433] text-sm text-[#cce7df] inline-flex items-start gap-2">
-          {integration?.trend_alignment ? <CheckCircle2 className="w-4 h-4 mt-0.5" /> : <AlertCircle className="w-4 h-4 mt-0.5" />}
-          {integration?.recommendation || "Review model alignment status before policy-level interpretation."}
-        </div>
       </div>
     </div>
   );

@@ -16,3 +16,7 @@ export const getApiUrl = (endpoint: keyof typeof API_ENDPOINTS) => {
 export const getSpeciesPredictionUrl = (speciesName: string) => {
   return `${API_BASE_URL}/api/v1/species/${speciesName}/prediction`;
 };
+
+export const getSpeciesCommonNameUrl = (speciesName: string) => {
+  return `${API_BASE_URL}/api/v1/species/${speciesName}/common-name`;
+};

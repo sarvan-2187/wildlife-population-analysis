@@ -1,5 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
+import { useEffect } from "react";
+import Lenis from "lenis";
 import { ArrowRight, Globe2, LineChart, FlaskConical, TrendingUp, Zap, Target, Shield } from "lucide-react";
+import logo from "../assets/logo.svg";
 
 const features = [
   {
@@ -36,13 +42,54 @@ const stats = [
 ];
 
 export default function LandingPage() {
+  useEffect(() => {
+    // Initialize Lenis smooth scrolling
+    const lenis = new Lenis({
+      lerp: 0.1,
+      wheelMultiplier: 1,
+      smoothTouch: true,
+      duration: 1.2,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    // Cleanup
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
+
   return (
-    <main className="w-full overflow-x-hidden">
+    <main className="w-full overflow-x-hidden bg-shell relative">
+      {/* Animated Stars Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {[...Array(50)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-white opacity-30 animate-twinkle"
+            style={{
+              width: Math.random() * 2 + 1 + "px",
+              height: Math.random() * 2 + 1 + "px",
+              left: Math.random() * 100 + "%",
+              top: Math.random() * 100 + "%",
+              animationDelay: Math.random() * 3 + "s",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10">
       {/* Hero Section */}
       <section
         className="relative bg-cover bg-center overflow-hidden"
         style={{
-          backgroundImage: "url('/assets/image.png')",
+          backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/assets/image.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           minHeight: "100vh",
@@ -51,12 +98,12 @@ export default function LandingPage() {
           justifyContent: "flex-end",
         }}
       >
-        {/* Animated gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-
         {/* Content Container at Bottom */}
         <div className="relative px-8 md:px-16 py-16 md:py-24 max-w-3xl z-10 animate-fade-in">
           <div className="space-y-6">
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border border-white/30 bg-white/10 backdrop-blur-md flex items-center justify-center p-3 shadow-xl shadow-black/25">
+              <Image src={logo} alt="EcoDynamix logo" className="w-full h-full object-contain" priority />
+            </div>
             <h1 className="text-6xl md:text-8xl font-bold text-white leading-tight animate-slide-up">
               EcoDynamix
             </h1>
@@ -87,7 +134,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="relative px-8 md:px-16 py-16 md:py-24 bg-[#0a1420]">
+      <section className="relative px-8 md:px-16 py-16 md:py-24">
         <div className="max-w-full">
           <div className="space-y-6 mb-16 animate-fade-in">
             <h2 className="text-5xl md:text-7xl font-bold text-white animate-slide-down">
@@ -109,10 +156,10 @@ export default function LandingPage() {
                 >
                   {/* Glassmorphic Card */}
                   <div
-                    className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/5 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    className="absolute inset-0 bg-gradient-to-br from-white/10 to-white/3 rounded-3xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500"
                   />
-                  <div className="relative backdrop-blur-xl bg-white/10 rounded-3xl p-8 md:p-10 border border-white/20 hover:border-white/40 transition-all duration-500 hover:bg-white/15 transform group-hover:scale-105">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300`}>
+                  <div className="relative backdrop-blur-xl bg-white/10 rounded-3xl p-8 md:p-10 border border-white/20 hover:border-white/30 transition-all duration-500" style={{ transform: "scale(1)" }} onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.02)"} onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-300`}>
                       <Icon className="w-6 h-6 text-[#0a1420]" />
                     </div>
                     <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">{feature.title}</h3>
@@ -126,7 +173,7 @@ export default function LandingPage() {
       </section>
 
       {/* Value Proposition Section */}
-      <section className="relative px-8 md:px-16 py-16 md:py-24 bg-[#0a1420] overflow-hidden">
+      <section className="relative px-8 md:px-16 py-16 md:py-24 overflow-hidden">
         <div className="max-w-full">
           <div className="space-y-12 animate-fade-in">
             <div className="space-y-4 animate-slide-up">
@@ -168,11 +215,7 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA Section */}
-      <section className="relative px-8 md:px-16 py-16 md:py-24 bg-[#0a1420] overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl opacity-20 animate-pulse" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl opacity-20 animate-pulse animation-delay-1000" />
-
+      <section className="relative px-8 md:px-16 py-16 md:py-24 overflow-hidden">
         <div className="relative max-w-full space-y-8 z-10 animate-fade-in">
           <h2 className="text-4xl md:text-6xl font-bold text-white animate-slide-up">
             Ready to Transform Conservation?
@@ -236,7 +279,15 @@ export default function LandingPage() {
         .animation-delay-1000 {
           animation-delay: 1000ms;
         }
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.8; }
+        }
+        .animate-twinkle {
+          animation: twinkle 3s ease-in-out infinite;
+        }
       `}</style>
+      </div>
     </main>
   );
 }

@@ -5,24 +5,39 @@ import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
-import { ArrowRight, Waves, Leaf, AlertTriangle } from "lucide-react";
+import { ArrowRight, Waves, Leaf, AlertTriangle, TrendingDown, AlertCircle } from "lucide-react";
 import { API_ENDPOINTS } from "../../lib/api-config";
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 type ViewMode = "General" | "Marine";
+type SpeciesCount = 5 | 10 | 15;
+
+const normalizeSpeciesKey = (value: string) =>
+  (value || "")
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/-+/g, "_")
+    .toLowerCase();
 
 export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("General");
   const [isMounted, setIsMounted] = useState(false);
+  const [speciesCount, setSpeciesCount] = useState<SpeciesCount>(5);
+  const [predictionData, setPredictionData] = useState<any>(null);
 
   useEffect(() => {
     fetch(API_ENDPOINTS.DASHBOARD)
       .then((res) => res.json())
       .then((data) => setDashboardData(data))
       .catch((err) => console.error("Error fetching dashboard data:", err));
+
+    fetch(API_ENDPOINTS.INTEGRATED_PREDICTIONS)
+      .then((res) => res.json())
+      .then((data) => setPredictionData(data))
+      .catch((err) => console.error("Error fetching prediction data:", err));
   }, []);
 
   useEffect(() => {
@@ -39,6 +54,43 @@ export default function DashboardPage() {
   }, []);
 
   const trendData = dashboardData?.trend_data || [];
+
+  const predictionIndex = useMemo(() => {
+    const raw = predictionData?.predictions || {};
+    const index: Record<string, any> = {};
+
+    Object.entries(raw).forEach(([key, value]) => {
+      index[normalizeSpeciesKey(key)] = value;
+    });
+
+    return index;
+  }, [predictionData]);
+
+  const decliningSpecies = useMemo(() => {
+    const speciesRows = dashboardData?.species_data || [];
+    if (!speciesRows.length) return [];
+
+    const species = speciesRows
+      .map((item: any) => {
+        const key = normalizeSpeciesKey(item?.binomial || item?.name || "");
+        const prediction = predictionIndex[key];
+
+        return {
+          name: item?.name || (item?.binomial || "").replace(/_/g, " "),
+          binomial: item?.binomial || key,
+          trend: item?.status || prediction?.current_trend?.trend || "Unknown",
+          confidence: prediction?.current_trend?.confidence || 0,
+          growthRate: Number(item?.growth ?? prediction?.forecast_trend?.growth_rate_inference ?? 0),
+          currentPopulation: Number(item?.pop ?? prediction?.current_population ?? 0),
+          currentTrend: prediction?.current_trend?.classifier_prediction || item?.status || "Unknown",
+        };
+      })
+      .filter((s) => s.growthRate < 0 || s.trend === "Declining" || s.currentTrend === "Declining")
+      .sort((a, b) => a.growthRate - b.growthRate)
+      .slice(0, speciesCount);
+
+    return species;
+  }, [dashboardData, predictionIndex, speciesCount]);
 
   const continentSegmentation = useMemo(() => {
     const regions = Object.entries(dashboardData?.regional_data || {}) as [string, any][];
@@ -215,30 +267,71 @@ export default function DashboardPage() {
 
       </section>
 
-      <section className="grid lg:grid-cols-2 gap-5">
+      <section className="space-y-5">
         <article className="glass-panel rounded-3xl p-6">
-          <h2 className="text-xl text-[#effff9]">Historical Trend</h2>
-          <p className="text-sm text-[#91b0a7] mt-1">Longitudinal population movement by year.</p>
-          <div className="h-82.5 mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="dashboardTrend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={viewMode === "Marine" ? "#6faef8" : "#63e6be"} stopOpacity={0.36} />
-                    <stop offset="95%" stopColor={viewMode === "Marine" ? "#6faef8" : "#63e6be"} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#33505c" vertical={false} />
-                <XAxis dataKey="year" stroke="#8ca8a1" tickLine={false} axisLine={false} />
-                <YAxis stroke="#8ca8a1" tickLine={false} axisLine={false} tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "#0b1a24", borderColor: "#2d4954", borderRadius: "12px" }}
-                  labelStyle={{ color: "#c5e8de" }}
-                />
-                <Area type="monotone" dataKey="population" stroke={viewMode === "Marine" ? "#6faef8" : "#63e6be"} strokeWidth={2.5} fill="url(#dashboardTrend)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-[#ff6b6b]" />
+              <h2 className="text-xl text-[#effff9]">Heavily Endangered Species</h2>
+            </div>
+            <div className="flex bg-[#0b1a24] p-1 rounded-xl border border-[#2f4652] gap-1">
+              {[5, 10, 15].map((count) => (
+                <button
+                  key={count}
+                  onClick={() => setSpeciesCount(count as SpeciesCount)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    speciesCount === count ? "bg-[#ef5350] text-white" : "text-[#86a79f] hover:text-[#d0f0ec]"
+                  }`}
+                >
+                  Top {count}
+                </button>
+              ))}
+            </div>
           </div>
+          <p className="text-sm text-[#91b0a7] mb-4">Species with the steepest population decline rates.</p>
+
+          <div className="space-y-2">
+            {decliningSpecies.length > 0 ? (
+              decliningSpecies.map((species, idx) => (
+                <div key={species.binomial} className="rounded-2xl p-4 border border-[#32505b] bg-[#0d1f2a] hover:border-[#4a6f7d] transition">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#ff6b6b] bg-[#4a1a1a] px-2 py-1 rounded">#{idx + 1}</span>
+                        <p className="text-[#dcf8ef] font-semibold capitalize">{species.name}</p>
+                      </div>
+                      <p className="text-xs text-[#7f9b95] mt-1 italic">{species.binomial}</p>
+                    </div>
+                    <TrendingDown className="w-5 h-5 text-[#ff6b6b] shrink-0" />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 mt-3 text-xs">
+                    <div className="rounded-lg p-2 bg-[#15303f] border border-[#2d505b]">
+                      <p className="text-[#7f9b95] uppercase tracking-wider">Decline Rate</p>
+                      <p className="font-bold text-[#ff6b6b] mt-1">{(species.growthRate || 0).toFixed(2)}%</p>
+                    </div>
+                    <div className="rounded-lg p-2 bg-[#15303f] border border-[#2d505b]">
+                      <p className="text-[#7f9b95] uppercase tracking-wider">Confidence</p>
+                      <p className="font-bold text-[#6faef8] mt-1">{((species.confidence || 0) * 100).toFixed(0)}%</p>
+                    </div>
+                    <div className="rounded-lg p-2 bg-[#15303f] border border-[#2d505b]">
+                      <p className="text-[#7f9b95] uppercase tracking-wider">Population</p>
+                      <p className="font-bold text-[#c5e8de] mt-1">{(species.currentPopulation || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl p-6 border border-[#32505b] bg-[#0d1f2a] text-center">
+                <p className="text-[#7f9b95]">Loading species data...</p>
+              </div>
+            )}
+          </div>
+
+          <Link href="/species" className="mt-4 inline-flex items-center gap-2 text-[#9fe9d3] hover:text-[#d6fff2] text-sm">
+            View all species details
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </article>
 
         <article className="glass-panel rounded-3xl p-6">
