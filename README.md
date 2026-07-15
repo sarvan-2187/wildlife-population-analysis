@@ -71,3 +71,5 @@ A unique addition to our pipeline, the **Haskell Verification Engine** acts as a
 ### Running the System
 1. **Backend**: `uvicorn main:app --reload --port 8000` inside `/backend`
 2. **Frontend**: `npm run dev` inside `/frontend`
+
+Santhosh | Sarvan Kumar | Manish
